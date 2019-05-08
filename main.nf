@@ -45,7 +45,6 @@ process indexHost {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
   cpus 1
   memory "8 GB"
-//   errorStrategy 'retry'
 
   input:
   file host_genome
@@ -70,8 +69,6 @@ process filterHostReads {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
   cpus 4
   memory "8 GB"
-  publishDir 'results/'
-//   errorStrategy 'retry'
 
   input:
   set host_genome_name, file(host_genome_tar) from indexed_host
@@ -103,7 +100,6 @@ process extractRibosomes {
   container "quay.io/biocontainers/biopython@sha256:1196016b05927094af161ccf2cd8371aafc2e3a8daa51c51ff023f5eb45a820f"
   cpus 1
   memory "4 GB"
-//   errorStrategy 'retry'
 
   input:
   set organism_name, file(fasta), file(gff3) from get_ribosome_ch
@@ -174,7 +170,6 @@ process indexRibosomes {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
   cpus 4
   memory "8 GB"
-//   errorStrategy 'retry'
 
   input:
   file "*" from ribosome_ch.collect()
@@ -211,7 +206,6 @@ process genomeHeaders {
   container "quay.io/biocontainers/biopython@sha256:1196016b05927094af161ccf2cd8371aafc2e3a8daa51c51ff023f5eb45a820f"
   cpus 1
   memory "4 GB"
-//   errorStrategy 'retry'
 
   input:
   set organism_name, file(fasta) from get_headers_ch
@@ -250,15 +244,15 @@ process concatGenomes {
   container "ubuntu:16.04"
   cpus 1
   memory "4 GB"
-  errorStrategy 'retry'
-
+  
   input:
   file "*" from get_genome_ch.collect()
   file "*" from genome_headers.collect()
   file "*" from genome_paths.collect()
   
   output:
-  set file("genomes.fasta"), file("genomes.tsv") into all_genomes
+  file "genomes.fasta" into genome_fasta
+  file "genomes.tsv" into genome_tsv
   file "genomes.tsv" into genome_table
 
   """
@@ -286,8 +280,7 @@ process concatGFF {
   container "ubuntu:16.04"
   cpus 1
   memory "4 GB"
-  errorStrategy 'retry'
-
+  
   input:
   file "*" from all_gff_ch.collect()
   
@@ -311,9 +304,7 @@ process alignRibosomes {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
   cpus 4
   memory "8 GB"
-  errorStrategy 'retry'
-  publishDir 'results/'
-
+  
   input:
   file ribosome_tar
   set sample_name, file(input_fastq) from align_ribo_ch
@@ -341,8 +332,6 @@ process riboCoverage {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
   cpus 1
   memory "4 GB"
-//   errorStrategy 'retry'
-  publishDir 'results/'
 
   input:
   set sample_name, file(bam) from ribo_coverage_ch
@@ -370,8 +359,6 @@ process pickGenomes {
   container "quay.io/fhcrc-microbiome/python-pandas:v0.24.2"
   cpus 1
   memory "4 GB"
-//   errorStrategy 'retry'
-  publishDir 'results/'
 
   input:
   set sample_name, file(sample_pileup), file(sample_idxstats) from ribo_hits_ch
@@ -430,11 +417,11 @@ process filterGenomes {
   container "quay.io/biocontainers/biopython@sha256:1196016b05927094af161ccf2cd8371aafc2e3a8daa51c51ff023f5eb45a820f"
   cpus 1
   memory "4 GB"
-  errorStrategy 'retry'
 
   input:
-  set file(genome_fasta), file(genome_tsv) from all_genomes
-  each set sample_name, file(sample_genomes) from genome_hits_ch
+  file genome_fasta
+  file genome_tsv
+  set sample_name, file(sample_genomes) from genome_hits_ch
   
   output:
   set sample_name, file("${sample_name}.ref.fasta") into index_sample_ref_ch
@@ -466,10 +453,14 @@ sample_headers = set([
 ])
 
 # Extract the sequences from the FASTA
+n_written = 0
 with open("${sample_name}.ref.fasta", "wt") as fo:
     for header, seq in SimpleFastaParser(open("${genome_fasta}")):
+        header = header.split(" ")[0].split("\\t")[0]
         if header in sample_headers:
             fo.write(">" + header + "\\n" + seq + "\\n")
+            n_written += 1
+assert n_written == len(sample_headers), (n_written, len(sample_headers))
 
   """
 
@@ -479,9 +470,8 @@ with open("${sample_name}.ref.fasta", "wt") as fo:
 // Make an indexed database of the genomes for each sample
 process indexGenomes {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
-  cpus 8
+  cpus 4
   memory "8 GB"
-  errorStrategy 'retry'
 
   input:
   set sample_name, file(sample_fasta) from index_sample_ref_ch
@@ -491,6 +481,7 @@ process indexGenomes {
 
   """
 #!/bin/bash
+set -e
 
 # Index the selected genomes
 bwa index "${sample_fasta}"
@@ -505,9 +496,9 @@ tar cvf ${sample_name}.ref.fasta.tar ${sample_name}.ref.fasta*
 // Align reads against selected genomes
 process alignGenomes {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
-  cpus 8
+  cpus 4
   memory "8 GB"
-  errorStrategy 'retry'
+  publishDir "${params.output_folder}/bam"
 
   input:
   set sample_name, file(input_fastq), file(ref_fasta_tar) from align_genome_ch.join(align_genome_ref_ch)
@@ -515,9 +506,11 @@ process alignGenomes {
   output:
   file "${sample_name}.genomes.bam" into genome_bam
   set sample_name, file("${sample_name}.genomes.pileup") into genome_pileup
+  file "${sample_name}.ref.fasta"
 
   """
 #!/bin/bash
+set -e
 
 # Untar the indexed genome database
 tar xvf ${sample_name}.ref.fasta.tar
@@ -536,52 +529,169 @@ samtools mpileup ${sample_name}.genomes.bam > ${sample_name}.genomes.pileup
 
 
 // Calculate summary metrics for each sample across all genomes
-process summarizeResults {
+process summarizeAlignments {
   container "quay.io/fhcrc-microbiome/python-pandas:v0.24.2"
   cpus 1
   memory "4 GB"
-  errorStrategy 'retry'
 
   input:
-  each set sample_name, file(sample_pileup) from genome_pileup
+  set sample_name, file(sample_pileup) from genome_pileup
   file genome_table
+  file all_gff
   
   output:
-  file "${sample_name}.summary.json" into sample_results
+  file "${sample_name}.summary.csv" into sample_results
 
   """
 #!/usr/bin/env python3
 import os
 import json
+import gzip
 import pandas as pd
 
-# SUMMARIZE RESULTS BY GENE, AND BY TYPE OF GENE
+# Read in the pileup
+pileup = pd.read_csv("${sample_pileup}", header=None, sep="\\t")
 
+# Calculate the depth per base
+base_depth = dict([
+    (reference, reference_pileup.set_index(1)[3].to_dict())
+    for reference, reference_pileup in pileup.groupby(0)
+])
+
+# Read in the list of organism names for each reference
+org_names = pd.read_csv(
+    "${genome_table}", 
+    sep="\\t", 
+    header=None
+).set_index(1)[0]
+
+all_references = set(org_names.index.values)
+
+# Read in the GFF annotations
+annot = []
+for line in gzip.open("${all_gff}", "rt"):
+    if line[0] == '#':
+        continue
+    line = line.split("\\t")
+
+    if line[0] not in all_references:
+        continue
+    
+    # Get the gene name
+    gene_desc = dict([
+            field.split("=", 1)
+        for field in line[8].split(";")
+    ])
+
+    if "ID" not in gene_desc:
+        continue
+    
+    annot.append(dict([
+        ("type", line[2]),
+        ("reference", line[0]),
+        ("start", int(line[3])),
+        ("end", int(line[4])),
+        ("ID", gene_desc["ID"])
+    ]))
+
+# Format as a DataFrame
+annot = pd.DataFrame(annot)
+
+# Subset to a few types of features
+annot = annot.query(
+    "type in ['CDS', 'tRNA', 'ncRNA', 'rRNA']"
+)
+
+# Add the organism name
+annot["organism"] = annot["reference"].apply(org_names.get)
+
+# Precompute the length of each feature
+annot["length"] = 1 + annot["end"] - annot["start"]
+assert (annot["length"] > 0).all()
+
+# Compute the depth of sequencing for each feature
+annot["depth"] = annot.apply(
+    lambda r: sum([
+        base_depth.get(r["reference"], dict()).get(ix, 0)
+        for ix in range(r["start"], r["end"] + 1)
+    ])/ (r["length"]),
+    axis=1
+)
+
+# Add the sample name
+annot["sample"] = "${sample_name}"
+
+# Write out to a file
+annot.to_csv("${sample_name}.summary.csv", sep=",", index=None)
 """
 
 }
 
 // Combine results across all genomes
-process summarizeResults {
+process finalResults {
   container "quay.io/fhcrc-microbiome/python-pandas:v0.24.2"
   cpus 1
   memory "4 GB"
-  errorStrategy 'retry'
   publishDir "${params.output_folder}"
 
   input:
-  file all_summary_json from sample_results.collect()
+  file "*" from sample_results.collect()
   
   output:
-  file "${params.output_name}" into sample_results
+  file "${params.output_prefix}.*.csv"
 
   """
 #!/usr/bin/env python3
 import os
-import json
 import pandas as pd
 
-# COMBINE RESULTS ACROSS ALL SAMPLES
+df = pd.concat([
+    pd.read_csv(fp)
+    for fp in os.listdir(".")
+    if fp.endswith(".csv")
+])
+
+# Write out the complete set of data
+df.to_csv("${params.output_prefix}.all.csv", index=None, sep=",")
+
+# Summarize for each organism
+# Calculate the weighted average depth for genes broken out by type
+summary_df = []
+for ix, sub_df in df.groupby(["organism", "sample"]):
+    i = dict([
+        ("organism", ix[0]),
+        ("sample", ix[1])
+    ])
+    for t, type_df in sub_df.groupby("type"):
+        i[t] = (type_df["depth"] * type_df["length"]).sum() / type_df["length"].sum()
+    summary_df.append(i)
+summary_df = pd.DataFrame(summary_df).set_index(["organism", "sample"])
+
+# Calculate the ratio of rRNA to CDS for each organism & sample
+summary_df["rRNA_CDS_ratio"] = summary_df["rRNA"] / summary_df["CDS"]
+
+for t in summary_df.columns.values:
+    summary_df.reset_index().pivot_table(
+        index="sample",
+        columns="organism",
+        values=t
+    ).reset_index().to_csv(
+        "${params.output_prefix}." + t + ".csv",
+        index=None,
+        sep=","
+    )
+
+# For each organism, print out the depth of sequencing across all samples
+for org, org_df in df.groupby("organism"):
+    org_df.pivot_table(
+        index="sample",
+        columns="ID",
+        values="depth"
+    ).reset_index().to_csv(
+        "${params.output_prefix}." + org + ".csv",
+        index=None,
+        sep=","
+    )
 
 """
 
