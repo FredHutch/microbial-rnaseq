@@ -10,6 +10,13 @@ Channel.from(file(params.batchfile))
        [job[0], file(job[1])]}
        .set{ filter_host_ch }
 
+// --batchfile is a CSV with two columns, sample name and FASTQ
+Channel.from(file(params.batchfile))
+       .splitCsv(header: false, sep: ",")
+       .map { job ->
+       [job[0], file(job[1])]}
+       .set{ count_reads }
+
 // --host_genome is a FASTA
 host_genome = file(params.host_genome)
 
@@ -37,6 +44,33 @@ Channel.from(file(params.genome_list))
        .splitCsv(header: false, sep: ",")
        .map { job -> file(job[2]) }
        .set{ all_gff_ch }
+
+
+// Count the number of input reads
+process countReads {
+  container "ubuntu:16.04"
+  cpus 1
+  memory "4 GB"
+  
+  input:
+  set sample_name, file(fastq) from count_reads
+  
+  output:
+  file "${sample_name}.countReads.csv" into total_counts
+
+  """
+#!/bin/bash
+
+set -e
+
+n=\$(gunzip -c "${fastq}" | wc -l)
+let "n=\$n/4"
+echo \$n
+echo "${sample_name},total_reads,\$n" > "${sample_name}.countReads.csv"
+
+  """
+
+}
 
 
 // Index the host genome
@@ -75,7 +109,7 @@ process filterHostReads {
   set sample_name, file(fastq) from filter_host_ch
   
   output:
-  set sample_name, file("${sample_name}.filtered.fastq") into align_ribo_ch, align_genome_ch
+  set sample_name, file("${sample_name}.filtered.fastq") into align_ribo_ch, align_genome_ch, count_nonhuman
 
   """
 #!/bin/bash
@@ -94,6 +128,33 @@ awk '{print("@" \$1 "\\n" \$10 "\\n+\\n" \$11)}' \
     """
 
 }
+
+// Count the number of non-human reads
+process countNonhumanReads {
+  container "ubuntu:16.04"
+  cpus 1
+  memory "4 GB"
+  
+  input:
+  set sample_name, file(fastq) from count_nonhuman
+  
+  output:
+  file "${sample_name}.countNonhumanReads.csv" into nonhuman_counts
+
+  """
+#!/bin/bash
+
+set -e
+
+n=\$(cat "${fastq}" | wc -l)
+let "n=\$n/4"
+echo \$n
+echo "${sample_name},nonhuman_reads,\$n" > "${sample_name}.countNonhumanReads.csv"
+
+  """
+
+}
+
 
 // Extract the ribosomal sequences from the reference genomes provided
 process extractRibosomes {
@@ -504,7 +565,7 @@ process alignGenomes {
   set sample_name, file(input_fastq), file(ref_fasta_tar) from align_genome_ch.join(align_genome_ref_ch)
   
   output:
-  file "${sample_name}.genomes.bam" into genome_bam
+  set sample_name, file("${sample_name}.genomes.bam") into count_aligned
   set sample_name, file("${sample_name}.genomes.pileup") into genome_pileup
   file "${sample_name}.ref.fasta"
 
@@ -524,6 +585,32 @@ samtools index ${sample_name}.genomes.bam
 samtools mpileup ${sample_name}.genomes.bam > ${sample_name}.genomes.pileup
 
     """
+
+}
+
+// Count the number of aligned reads
+process countAlignedReads {
+  container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
+  cpus 1
+  memory "4 GB"
+  
+  input:
+  set sample_name, file(bam) from count_aligned
+  
+  output:
+  file "${sample_name}.countMapped.csv" into mapped_counts
+
+  """
+#!/bin/bash
+
+set -e
+
+n=\$(samtools view "${bam}" | cut -f 1 | sort -u | wc -l)
+let "n=\$n/4"
+echo \$n
+echo "${sample_name},mapped_reads,\$n" > "${sample_name}.countMapped.csv"
+
+  """
 
 }
 
@@ -696,3 +783,46 @@ for org, org_df in df.groupby("organism"):
 """
 
 }
+
+
+// Combine results across all genomes
+process mappingSummary {
+  container "quay.io/fhcrc-microbiome/python-pandas:v0.24.2"
+  cpus 1
+  memory "4 GB"
+  publishDir "${params.output_folder}"
+
+  input:
+  file "*" from total_counts.collect()
+  file "*" from nonhuman_counts.collect()
+  file "*" from mapped_counts.collect()
+  
+  output:
+  file "${params.output_prefix}.mapping_summary.csv"
+
+  """
+#!/usr/bin/env python3
+import os
+import pandas as pd
+
+df = pd.concat([
+    pd.read_csv(fp, header=None, names=["sample", "metric", "value"])
+    for fp in os.listdir(".")
+    if fp.endswith(".csv")
+])
+
+df = df.pivot_table(
+    index="sample",
+    columns="metric",
+    values="value"
+)
+df.reset_index().to_csv(
+    "${params.output_prefix}.mapping_summary.csv",
+    index=None,
+    sep=","
+)
+
+"""
+
+}
+
