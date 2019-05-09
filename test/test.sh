@@ -5,7 +5,7 @@ set -e
 nextflow \
     -C nextflow.config \
     run \
-    ../main.nf \
+    fredhutch/microbial-rnaseq \
     --batchfile batchfile.csv \
     --genome_list genome_list.csv \
     --host_genome ref_genomes/AY064377.1.fasta \
