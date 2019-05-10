@@ -100,3 +100,11 @@ This tool creates many CSV files in the `--output_folder`. These include:
   * `<output_prefix>.rRNA.csv`: The weighted average depth of sequencing across all rRNA genes, broken out by organism and sample.
   * `<output_prefix>.rRNA_CDS_ratio.csv`: The weighted average depth of sequencing of the rRNA genes / CDS genes, broken out by organism and sample.
   * `<output_prefix>.<organism_name>.csv`: The depth of sequencing for each gene in a given organism, across all samples
+
+
+### Reference Genomes
+
+You can get a set of reference genomes from NCBI by going to 
+https://www.ncbi.nlm.nih.gov/genome/browse#!/prokaryotes/ and selecting those genomes with (for example)
+an assembly level of "Complete" listed. I made a small script to convert that list into the explicit
+format required as input for this pipeline: `convert_ncbi_genome_list.py`.
