@@ -160,6 +160,7 @@ df -h
 
 n=\$(gunzip -c "${fastq}" | wc -l)
 echo here
+echo $n
 let "n=\$n/4"
 echo here
 echo \$n
