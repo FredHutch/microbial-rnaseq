@@ -154,6 +154,9 @@ process countNonhumanReads {
 #!/bin/bash
 
 set -e
+ 
+ls -lhtr
+df -h
 
 n=\$(gunzip -c "${fastq}" | wc -l)
 let "n=\$n/4"
