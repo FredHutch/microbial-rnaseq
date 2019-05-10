@@ -58,6 +58,8 @@ process countReads {
   output:
   file "${sample_name}.countReads.csv" into total_counts
 
+  afterScript "rm *"
+
   """
 #!/bin/bash
 
@@ -86,6 +88,8 @@ process indexHost {
   output:
   set "${host_genome}", file("${host_genome}.tar") into indexed_host
   
+  afterScript "rm *"
+
   """
 #!/bin/bash
 
@@ -110,6 +114,8 @@ process filterHostReads {
   
   output:
   set sample_name, file("${sample_name}.filtered.fastq.gz") into align_ribo_ch, align_genome_ch, count_nonhuman
+
+  afterScript "rm *"
 
   """
 #!/bin/bash
@@ -142,6 +148,8 @@ process countNonhumanReads {
   output:
   file "${sample_name}.countNonhumanReads.csv" into nonhuman_counts
 
+  afterScript "rm *"
+
   """
 #!/bin/bash
 
@@ -168,6 +176,8 @@ process extractRibosomes {
   
   output:
   set file("${fasta}.ribosome.fasta"), file("${fasta}.ribosome.tsv") into ribosome_ch
+
+  afterScript "rm *"
 
   """
 #!/usr/bin/env python3
@@ -240,6 +250,8 @@ process indexRibosomes {
   file "ribosomes.tar" into ribosome_tar
   file "ribosomes.tsv" into ribosome_tsv
 
+  afterScript "rm *"
+
   """
 #!/bin/bash
 
@@ -275,6 +287,8 @@ process genomeHeaders {
   output:
   file "${organism_name}.headers.tsv" into genome_headers
   file "${organism_name}.filepath" into genome_paths
+
+  afterScript "rm *"
 
   """
 #!/usr/bin/env python3
@@ -317,6 +331,8 @@ process concatGenomes {
   file "genomes.tsv" into genome_tsv
   file "genomes.tsv" into genome_table
 
+  afterScript "rm *"
+
   """
 #!/bin/bash
 
@@ -349,6 +365,8 @@ process concatGFF {
   output:
   file "genomes.gff.gz" into all_gff
 
+  afterScript "rm *"
+
   """
 #!/bin/bash
 
@@ -373,6 +391,8 @@ process alignRibosomes {
   
   output:
   set sample_name, file("${sample_name}.ribosome.bam") into ribo_coverage_ch
+
+  afterScript "rm *"
 
   """
 #!/bin/bash
@@ -400,6 +420,8 @@ process riboCoverage {
   
   output:
   set sample_name, file("${sample_name}.ribosome.pileup"), file("${sample_name}.ribosome.idxstats") into ribo_hits_ch
+
+  afterScript "rm *"
 
   """
 #!/bin/bash
@@ -429,6 +451,8 @@ process pickGenomes {
   
   output:
   set sample_name, file("${sample_name}.genomes.txt") into genome_hits_ch
+
+  afterScript "rm *"
 
   """
 #!/usr/bin/env python3
@@ -488,6 +512,8 @@ process filterGenomes {
   output:
   set sample_name, file("${sample_name}.ref.fasta") into index_sample_ref_ch
 
+  afterScript "rm *"
+
   """
 #!/usr/bin/env python3
 from Bio.SeqIO.FastaIO import SimpleFastaParser
@@ -541,6 +567,8 @@ process indexGenomes {
   output:
   set sample_name, file("${sample_name}.ref.fasta.tar") into align_genome_ref_ch
 
+  afterScript "rm *"
+
   """
 #!/bin/bash
 set -e
@@ -569,6 +597,8 @@ process alignGenomes {
   set sample_name, file("${sample_name}.genomes.bam") into count_aligned
   set sample_name, file("${sample_name}.genomes.pileup") into genome_pileup
   file "${sample_name}.ref.fasta"
+
+  afterScript "rm *"
 
   """
 #!/bin/bash
@@ -601,6 +631,8 @@ process countAlignedReads {
   output:
   file "${sample_name}.countMapped.csv" into mapped_counts
 
+  afterScript "rm *"
+
   """
 #!/bin/bash
 
@@ -629,6 +661,8 @@ process summarizeAlignments {
   
   output:
   file "${sample_name}.summary.csv" into sample_results
+
+  afterScript "rm *"
 
   """
 #!/usr/bin/env python3
@@ -728,6 +762,8 @@ process finalResults {
   output:
   file "${params.output_prefix}.*.csv"
 
+  afterScript "rm *"
+
   """
 #!/usr/bin/env python3
 import os
@@ -800,6 +836,8 @@ process mappingSummary {
   
   output:
   file "${params.output_prefix}.mapping_summary.csv"
+
+  afterScript "rm *"
 
   """
 #!/usr/bin/env python3
