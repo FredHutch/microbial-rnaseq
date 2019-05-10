@@ -109,7 +109,7 @@ process filterHostReads {
   set sample_name, file(fastq) from filter_host_ch
   
   output:
-  set sample_name, file("${sample_name}.filtered.fastq") into align_ribo_ch, align_genome_ch, count_nonhuman
+  set sample_name, file("${sample_name}.filtered.fastq.gz") into align_ribo_ch, align_genome_ch, count_nonhuman
 
   """
 #!/bin/bash
@@ -122,8 +122,9 @@ tar xvf ${host_genome_tar}
 # Align with BWA and save the unmapped BAM
 bwa mem -t 4 ${host_genome_name} ${fastq} | \
 samtools view -f 4 | \
-awk '{print("@" \$1 "\\n" \$10 "\\n+\\n" \$11)}' \
-> ${sample_name}.filtered.fastq
+awk '{print("@" \$1 "\\n" \$10 "\\n+\\n" \$11)}' | \
+gzip -c \
+> ${sample_name}.filtered.fastq.gz
 
     """
 
@@ -146,7 +147,7 @@ process countNonhumanReads {
 
 set -e
 
-n=\$(cat "${fastq}" | wc -l)
+n=\$(gunzip -c "${fastq}" | wc -l)
 let "n=\$n/4"
 echo \$n
 echo "${sample_name},nonhuman_reads,\$n" > "${sample_name}.countNonhumanReads.csv"
