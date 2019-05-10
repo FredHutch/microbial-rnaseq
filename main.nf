@@ -159,9 +159,13 @@ ls -lhtr
 df -h
 
 n=\$(gunzip -c "${fastq}" | wc -l)
+echo here
 let "n=\$n/4"
+echo here
 echo \$n
+echo here
 echo "${sample_name},nonhuman_reads,\$n" > "${sample_name}.countNonhumanReads.csv"
+echo here
 
   """
 
