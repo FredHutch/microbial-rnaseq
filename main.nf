@@ -221,7 +221,7 @@ process extractRibosomes {
   memory "4 GB"
 
   input:
-  set organism_name, file(fasta), file(gff3) from get_ribosome_genome_ch.join(get_ribosome_gff_ch)
+  set organism_name, file(fasta), file(gff3) from get_ribosome_fasta_ch.join(get_ribosome_gff_ch)
   
   output:
   set file("${fasta}.ribosome.fasta"), file("${fasta}.ribosome.tsv") into ribosome_ch
