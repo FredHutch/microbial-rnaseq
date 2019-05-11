@@ -36,7 +36,7 @@ Channel.from(file(params.genome_list))
 
 
 process downloadGenome {
-  container "ubuntu:16.04"
+  container "inutano/wget@sha256:1c66835b2f7af64aba15be18a735aab53046a2bcb2126eb01470e5dcd725383e"
   cpus 1
   memory "4 GB"
   errorStrategy 'retry'
@@ -54,20 +54,13 @@ process downloadGenome {
 
 set -e
 
-wget -O TEMP ${fasta_url}
-
-if [[ gzip -t TEMP ]]; then
-    mv TEMP ${organism_name}.fasta.gz
-else
-    mv TEMP ${organism_name}.fasta
-    gzip ${organism_name}.fasta
-fi
+wget -O ${organism_name}.fasta.gz ${fasta_url}
 
   """
 }
 
 process downloadGFF {
-  container "ubuntu:16.04"
+  container "inutano/wget@sha256:1c66835b2f7af64aba15be18a735aab53046a2bcb2126eb01470e5dcd725383e"
   cpus 1
   memory "4 GB"
   errorStrategy 'retry'
@@ -85,14 +78,7 @@ process downloadGFF {
 
 set -e
 
-wget -O TEMP ${gff_url}
-
-if [[ gzip -t TEMP ]]; then
-    mv TEMP ${organism_name}.gff.gz
-else
-    mv TEMP ${organism_name}.gff
-    gzip ${organism_name}.gff
-fi
+wget -O ${organism_name}.gff.gz ${gff_url}
 
   """
 }
