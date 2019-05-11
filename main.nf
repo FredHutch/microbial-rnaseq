@@ -2,6 +2,7 @@
 
 // Minimum coverage of a ribosomal subunit needed for full genome alignment
 params.min_cov_pct = 90
+params.min_qual = 50
 
 // --batchfile is a CSV with two columns, sample name and FASTQ
 Channel.from(file(params.batchfile))
@@ -65,9 +66,7 @@ process countReads {
 
 set -e
 
-n=\$(gunzip -c "${fastq}" | wc -l)
-let "n=\$n/4"
-echo \$n
+n=\$(gunzip -c "${fastq}" | awk 'NR % 4 == 1' | wc -l)
 echo "${sample_name},total_reads,\$n" > "${sample_name}.countReads.csv"
 
   """
@@ -84,6 +83,7 @@ process indexHost {
 
   input:
   file host_genome
+  val min_qual from params.min_qual
   
   output:
   set "${host_genome}", file("${host_genome}.tar") into indexed_host
@@ -111,6 +111,7 @@ process filterHostReads {
   input:
   set host_genome_name, file(host_genome_tar) from indexed_host
   set sample_name, file(fastq) from filter_host_ch
+  val min_qual from params.min_qual
   
   output:
   set sample_name, file("${sample_name}.filtered.fastq.gz") into align_ribo_ch, align_genome_ch, count_nonhuman
@@ -126,7 +127,7 @@ set -e
 tar xvf ${host_genome_tar}
 
 # Align with BWA and save the unmapped BAM
-bwa mem -t 4 ${host_genome_name} ${fastq} | \
+bwa mem -T ${min_qual} -t 4 ${host_genome_name} ${fastq} | \
 samtools view -f 4 | \
 awk '{print("@" \$1 "\\n" \$10 "\\n+\\n" \$11)}' | \
 gzip -c \
@@ -154,19 +155,9 @@ process countNonhumanReads {
 #!/bin/bash
 
 set -e
- 
-ls -lhtr
-df -h
 
-n=\$(gunzip -c "${fastq}" | wc -l)
-echo here
-echo \$n
-let "n=\$n/4"
-echo here
-echo \$n
-echo here
+n=\$(gunzip -c "${fastq}" | awk 'NR % 4 == 1' | wc -l)
 echo "${sample_name},nonhuman_reads,\$n" > "${sample_name}.countNonhumanReads.csv"
-echo here
 
   """
 
@@ -411,7 +402,7 @@ set -e
 tar xvf ${ribosome_tar}
 
 # Align with BWA and remove unmapped reads
-bwa mem -a -t 8 ribosomes.fasta ${input_fastq} | samtools view -b -F 4 -o ${sample_name}.ribosome.bam
+bwa mem -T ${min_qual} -a -t 8 ribosomes.fasta ${input_fastq} | samtools view -b -F 4 -o ${sample_name}.ribosome.bam
 
     """
 
@@ -600,6 +591,7 @@ process alignGenomes {
 
   input:
   set sample_name, file(input_fastq), file(ref_fasta_tar) from align_genome_ch.join(align_genome_ref_ch)
+  val min_qual from params.min_qual
   
   output:
   set sample_name, file("${sample_name}.genomes.bam") into count_aligned
@@ -616,7 +608,7 @@ set -e
 tar xvf ${sample_name}.ref.fasta.tar
 
 # Align with BWA and remove unmapped reads
-bwa mem -a -t 8 ${sample_name}.ref.fasta ${input_fastq} | samtools view -b -F 4 -o ${sample_name}.genomes.bam
+bwa mem -T ${min_qual} -a -t 8 ${sample_name}.ref.fasta ${input_fastq} | samtools view -b -F 4 -o ${sample_name}.genomes.bam
 
 samtools sort ${sample_name}.genomes.bam > ${sample_name}.genomes.bam.sorted
 mv ${sample_name}.genomes.bam.sorted ${sample_name}.genomes.bam
@@ -647,8 +639,6 @@ process countAlignedReads {
 set -e
 
 n=\$(samtools view "${bam}" | cut -f 1 | sort -u | wc -l)
-let "n=\$n/4"
-echo \$n
 echo "${sample_name},mapped_reads,\$n" > "${sample_name}.countMapped.csv"
 
   """
