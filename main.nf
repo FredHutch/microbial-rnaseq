@@ -25,26 +25,75 @@ host_genome = file(params.host_genome)
 Channel.from(file(params.genome_list))
        .splitCsv(header: false, sep: ",")
        .map { job ->
-       [job[0], file(job[1]), file(job[2])]}
-       .set{ get_ribosome_ch }
-
+       [job[0], job[1]]}
+       .set{ download_genome_ch }
 
 Channel.from(file(params.genome_list))
        .splitCsv(header: false, sep: ",")
        .map { job ->
-       [job[0], file(job[1])]}
-       .set{ get_headers_ch }
+       [job[0], job[2]]}
+       .set{ download_gff_ch }
 
 
-Channel.from(file(params.genome_list))
-       .splitCsv(header: false, sep: ",")
-       .map { job -> file(job[1]) }
-       .set{ get_genome_ch }
-       
-Channel.from(file(params.genome_list))
-       .splitCsv(header: false, sep: ",")
-       .map { job -> file(job[2]) }
-       .set{ all_gff_ch }
+process downloadGenome {
+  container "ubuntu:16.04"
+  cpus 1
+  memory "4 GB"
+  
+  input:
+  set organism_name, fasta_url from download_genome_ch
+  
+  output:
+  set organism_name, file("${organism_name}.fasta.gz") into get_headers_ch, get_ribosome_fasta_ch, get_genome_ch
+
+  afterScript "rm *"
+
+  """
+#!/bin/bash
+
+set -e
+
+wget -O TEMP ${fasta_url}
+
+if [[ gzip -t TEMP ]]; then
+    mv TEMP ${organism_name}.fasta.gz
+else
+    mv TEMP ${organism_name}.fasta
+    gzip ${organism_name}.fasta
+fi
+
+  """
+}
+
+process downloadGFF {
+  container "ubuntu:16.04"
+  cpus 1
+  memory "4 GB"
+  
+  input:
+  set organism_name, gff_url from download_genome_ch
+  
+  output:
+  set organism_name, file("${organism_name}.gff.gz") into get_ribosome_gff_ch, all_gff_ch
+
+  afterScript "rm *"
+
+  """
+#!/bin/bash
+
+set -e
+
+wget -O TEMP ${gff_url}
+
+if [[ gzip -t TEMP ]]; then
+    mv TEMP ${organism_name}.gff.gz
+else
+    mv TEMP ${organism_name}.gff
+    gzip ${organism_name}.gff
+fi
+
+  """
+}
 
 
 // Count the number of input reads
@@ -170,7 +219,7 @@ process extractRibosomes {
   memory "4 GB"
 
   input:
-  set organism_name, file(fasta), file(gff3) from get_ribosome_ch
+  set organism_name, file(fasta), file(gff3) from get_ribosome_genome_ch.join(get_ribosome_gff_ch)
   
   output:
   set file("${fasta}.ribosome.fasta"), file("${fasta}.ribosome.tsv") into ribosome_ch
