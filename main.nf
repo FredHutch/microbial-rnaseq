@@ -36,7 +36,7 @@ Channel.from(file(params.genome_list))
 
 
 process downloadGenome {
-  container "inutano/wget@sha256:1c66835b2f7af64aba15be18a735aab53046a2bcb2126eb01470e5dcd725383e"
+  container "quay.io/fhcrc-microbiome/wget@sha256:98b90e8bb8a171182505f1e255b0bd85cbbda68f08c08b4877c3fc48e63ac82f"
   cpus 1
   memory "4 GB"
   errorStrategy 'retry'
@@ -60,7 +60,7 @@ wget -O ${organism_name}.fasta.gz ${fasta_url}
 }
 
 process downloadGFF {
-  container "inutano/wget@sha256:1c66835b2f7af64aba15be18a735aab53046a2bcb2126eb01470e5dcd725383e"
+  container "quay.io/fhcrc-microbiome/wget@sha256:98b90e8bb8a171182505f1e255b0bd85cbbda68f08c08b4877c3fc48e63ac82f"
   cpus 1
   memory "4 GB"
   errorStrategy 'retry'
