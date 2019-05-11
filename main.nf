@@ -39,6 +39,7 @@ process downloadGenome {
   container "ubuntu:16.04"
   cpus 1
   memory "4 GB"
+  errorStrategy 'retry'
   
   input:
   set organism_name, fasta_url from download_genome_ch
@@ -69,6 +70,7 @@ process downloadGFF {
   container "ubuntu:16.04"
   cpus 1
   memory "4 GB"
+  errorStrategy 'retry'
   
   input:
   set organism_name, gff_url from download_gff_ch
