@@ -71,7 +71,7 @@ process downloadGFF {
   memory "4 GB"
   
   input:
-  set organism_name, gff_url from download_genome_ch
+  set organism_name, gff_url from download_gff_ch
   
   output:
   set organism_name, file("${organism_name}.gff.gz") into get_ribosome_gff_ch, all_gff_ch
