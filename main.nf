@@ -83,7 +83,6 @@ process indexHost {
 
   input:
   file host_genome
-  val min_qual from params.min_qual
   
   output:
   set "${host_genome}", file("${host_genome}.tar") into indexed_host
@@ -387,6 +386,7 @@ process alignRibosomes {
   input:
   file ribosome_tar
   set sample_name, file(input_fastq) from align_ribo_ch
+  val min_qual from params.min_qual
   
   output:
   set sample_name, file("${sample_name}.ribosome.bam") into ribo_coverage_ch
