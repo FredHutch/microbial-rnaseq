@@ -9,14 +9,9 @@ Channel.from(file(params.batchfile))
        .splitCsv(header: false, sep: ",")
        .map { job ->
        [job[0], file(job[1])]}
-       .set{ filter_host_ch }
+       .set { all_reads }
 
-// --batchfile is a CSV with two columns, sample name and FASTQ
-Channel.from(file(params.batchfile))
-       .splitCsv(header: false, sep: ",")
-       .map { job ->
-       [job[0], file(job[1])]}
-       .set{ count_reads }
+all_reads.into{ filter_host_ch, count_reads }
 
 // --host_genome is a FASTA
 host_genome = file(params.host_genome)
