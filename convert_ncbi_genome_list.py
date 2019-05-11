@@ -22,7 +22,7 @@ df["suffix"] = df["GenBank FTP"].apply(lambda s: s.split("/")[-1])
 assert df["suffix"].unique().shape[0] == df.shape[0]
 
 
-def reformat_name(s, chars=[",", ".", "=", "-", "(", ")", "'", "^", '"', "[", "]"]):
+def reformat_name(s, chars=[",", ".", "=", "-", "(", ")", "'", "^", '"', "[", "]", "/", "\\"]):
     s = s.strip(" ")
     for c in chars:
         s = s.replace(c, "")
