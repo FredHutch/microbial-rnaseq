@@ -346,8 +346,8 @@ with open("${organism_name}.filepath", "wt") as fo:
 // Combine all of the headers and FASTAs
 process concatGenomes {
   container "ubuntu:16.04"
-  cpus 1
-  memory "4 GB"
+  cpus 4
+  memory "30 GB"
   
   input:
   file "*" from get_genome_ch.collect()
