@@ -4,6 +4,8 @@ import os
 import pandas as pd
 import sys
 
+max_genomes_per_species = 10
+
 assert len(sys.argv) == 3, "Please specify input and output CSV files"
 
 fp_in = sys.argv[1]
@@ -22,7 +24,7 @@ df["suffix"] = df["GenBank FTP"].apply(lambda s: s.split("/")[-1])
 assert df["suffix"].unique().shape[0] == df.shape[0]
 
 
-def reformat_name(s, chars=[",", ".", "=", "-", "(", ")", "'", "^", '"', "[", "]", "/", "\\"]):
+def reformat_name(s, chars=[",", ".", "=", "-", "(", ")", "'", "^", '"', "[", "]", "/", "\\", ":"]):
     s = s.strip(" ")
     for c in chars:
         s = s.replace(c, "")
@@ -56,5 +58,13 @@ df["gff"] = df.apply(
     lambda r: "{}/{}_genomic.gff.gz".format(r["GenBank FTP"], r["suffix"]),
     axis=1
 )
+
+# Get the 'species' name from the first two words of the organism name
+df["species"] = df["#Organism Name"].apply(lambda n: "_".join(n.split("_")[:2]))
+
+print("Filtering to {:,} genomes per species".format(max_genomes_per_species))
+prior = df.shape[0]
+df = df.groupby("species").head(max_genomes_per_species)
+print("Out of the {:,} genomes input, {:,} were retained".format(prior, df.shape[0]))
 
 df.reindex(columns=["#Organism Name", "fasta", "gff"]).to_csv(fp_out, sep=",", header=None, index=None)
