@@ -185,8 +185,8 @@ process indexRibosomes {
   val database_prefix from params.database_prefix
   
   output:
-  file "${database_prefix}.ribosomes.tar" into ribosome_tar
-  file "${database_prefix}.ribosomes.tsv" into ribosome_tsv
+  file "${database_prefix}.ribosomes.tar"
+  file "${database_prefix}.ribosomes.tsv"
 
   afterScript "rm *"
 
