@@ -236,7 +236,7 @@ def safe_open(fp, mode="rt"):
     return open(fp, mode=mode)
 
 # Extract the headers from the FASTA and write out to TSV
-with open("${organism_name}.headers.tsv", "wt") as fo:
+with gzip.open("${organism_name}.headers.tsv.gz", "wt") as fo:
     for header, seq in SimpleFastaParser(safe_open("${fasta}")):
         header = header.split(" ")[0].split("\\t")[0].rstrip("\\n")
         fo.write("${organism_name}\\t" + header + "\\n")
@@ -296,7 +296,7 @@ process concatHeaders {
 
 set -e
 
-cat *tsv | sed '/^\$/d' | gzip -c > ${database_prefix}.tsv.gz
+cat *tsv.gz > ${database_prefix}.tsv.gz
 
   """
 
