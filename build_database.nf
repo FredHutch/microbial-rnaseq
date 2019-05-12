@@ -33,7 +33,8 @@ process downloadGenome {
   set organism_name, fasta_url from download_genome_ch
   
   output:
-  set organism_name, file("${organism_name}.fasta.gz") into get_headers_ch, get_ribosome_fasta_ch, get_genome_ch
+  set organism_name, file("${organism_name}.fasta.gz") into get_headers_ch, get_ribosome_fasta_ch
+  file "${organism_name}.fasta.gz" into get_genome_ch
 
   afterScript "rm *"
 
@@ -221,7 +222,6 @@ process genomeHeaders {
   
   output:
   file "${organism_name}.headers.tsv" into genome_headers
-  file "${organism_name}.filepath" into genome_paths
 
   afterScript "rm *"
 
@@ -241,16 +241,12 @@ with open("${organism_name}.headers.tsv", "wt") as fo:
         header = header.split(" ")[0].split("\\t")[0].rstrip("\\n")
         fo.write("${organism_name}\\t" + header + "\\n")
 
-# Write out the file name
-with open("${organism_name}.filepath", "wt") as fo:
-    fo.write("${fasta}\\n")
-
   """
 
 }
 
 
-// Combine all of the headers and FASTAs
+
 process concatGenomes {
   container "ubuntu:16.04"
   cpus 4
@@ -259,13 +255,10 @@ process concatGenomes {
   
   input:
   file "*" from get_genome_ch.collect()
-  file "*" from genome_headers.collect()
-  file "*" from genome_paths.collect()
   val database_prefix from params.database_prefix
   
   output:
   file "${database_prefix}.fasta.gz"
-  file "${database_prefix}.tsv.gz"
   
   afterScript "rm *"
 
@@ -274,15 +267,34 @@ process concatGenomes {
 
 set -e
 
-cat *filepath | while read fp; do
+cat *fasta.gz >> ${database_prefix}.fasta.gz
 
-    [[ -s "\$fp" ]] || continue
+  """
 
-    echo Processing \$fp
+}
 
-    cat "\$fp" >> ${database_prefix}.fasta.gz
 
-done
+// Combine all of the headers
+process concatHeaders {
+  container "ubuntu:16.04"
+  cpus 4
+  memory "30 GB"
+  publishDir "${params.output_folder}"
+  
+  input:
+  file "*" from genome_headers.collect()
+  val database_prefix from params.database_prefix
+  
+  output:
+  file "${database_prefix}.tsv.gz"
+
+  afterScript "rm *"
+
+  """"
+
+#!/bin/bash
+
+set -e
 
 cat *tsv | sed '/^\$/d' | gzip -c > ${database_prefix}.tsv.gz
 
