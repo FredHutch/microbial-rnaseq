@@ -367,13 +367,15 @@ set -e
 
 cat *filepath | while read fp; do
 
-    [[ -s "\$fp" ]]
+    [[ -s "\$fp" ]] || continue
 
-    gzip -t "\$fp" && gunzip -c "\$fp" || cat "\$fp"
+    echo Processing \$fp
 
-done | gzip -c > genomes.fasta.gz
+    cat "\$fp" >> genomes.fasta.gz
 
-cat *tsv | sed '/^\$/d' | gzip -c > genomes.tsv
+done
+
+cat *tsv | sed '/^\$/d' | gzip -c > genomes.tsv.gz
 
   """
 
