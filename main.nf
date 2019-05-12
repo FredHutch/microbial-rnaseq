@@ -355,10 +355,9 @@ process concatGenomes {
   file "*" from genome_paths.collect()
   
   output:
-  file "genomes.fasta" into genome_fasta
-  file "genomes.tsv" into genome_tsv
-  file "genomes.tsv" into genome_table
-
+  file "genomes.fasta.gz" into genome_fasta
+  file "genomes.tsv.gz" into genome_tsv, genome_table
+  
   afterScript "rm *"
 
   """
@@ -372,9 +371,9 @@ cat *filepath | while read fp; do
 
     gzip -t "\$fp" && gunzip -c "\$fp" || cat "\$fp"
 
-done > genomes.fasta
+done | gzip -c > genomes.fasta.gz
 
-cat *tsv | sed '/^\$/d' > genomes.tsv
+cat *tsv | sed '/^\$/d' | gzip -c > genomes.tsv
 
   """
 
@@ -546,6 +545,7 @@ process filterGenomes {
   """
 #!/usr/bin/env python3
 from Bio.SeqIO.FastaIO import SimpleFastaParser
+import gzip
 
 # Read in the genomes needed for this sample
 sample_genomes = open("${sample_genomes}").readlines()
@@ -554,7 +554,7 @@ sample_genomes = [fp.rstrip("\\n") for fp in sample_genomes]
 # Figure out which headers that corresponds to
 genome_headers = dict()
 all_headers = set([])
-for line in open("${genome_tsv}", "rt").readlines():
+for line in gzip.open("${genome_tsv}", "rt").readlines():
     line = line.rstrip("\\n").split("\\t")
     if len(line) != 2:
         continue
@@ -572,7 +572,7 @@ sample_headers = set([
 # Extract the sequences from the FASTA
 n_written = 0
 with open("${sample_name}.ref.fasta", "wt") as fo:
-    for header, seq in SimpleFastaParser(open("${genome_fasta}")):
+    for header, seq in SimpleFastaParser(gzip.open("${genome_fasta}", "rt")):
         header = header.split(" ")[0].split("\\t")[0]
         if header in sample_headers:
             fo.write(">" + header + "\\n" + seq + "\\n")
