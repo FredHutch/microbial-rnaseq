@@ -290,7 +290,7 @@ process concatHeaders {
 
   afterScript "rm *"
 
-  """"
+  """
 
 #!/bin/bash
 
