@@ -95,8 +95,12 @@ set -e
 # Untar the host genome
 tar xvf ${host_genome_tar}
 
+host_genome_name=\$(echo ${host_genome_tar} | sed 's/.tar//')
+
+[[ -s \$host_genome_name ]]
+
 # Align with BWA and save the unmapped BAM
-bwa mem -T ${min_qual} -t 4 ${host_genome_name} ${fastq} | \
+bwa mem -T ${min_qual} -t 4 \$host_genome_name ${fastq} | \
 samtools view -f 4 | \
 awk '{print("@" \$1 "\\n" \$10 "\\n+\\n" \$11)}' | \
 gzip -c \
