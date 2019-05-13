@@ -221,7 +221,7 @@ process genomeHeaders {
   set organism_name, file(fasta) from get_headers_ch
   
   output:
-  file "${organism_name}.headers.tsv" into genome_headers
+  file "${organism_name}.headers.tsv.gz" into genome_headers
 
   afterScript "rm *"
 
