@@ -7,19 +7,19 @@ params.database_prefix = "microbial_genomes"
 params.database_folder = "./"
 
 // The database contains a TAR with the indexed ribosome sequences
-params.ribosome_tar = "${database_folder}${database_prefix}.ribosomes.tar"
+params.ribosome_tar = "${params.database_folder}${params.database_prefix}.ribosomes.tar"
 ribosome_tar = file("${params.ribosome_tar}")
-params.ribosome_tsv = "${database_folder}${database_prefix}.ribosomes.tsv"
+params.ribosome_tsv = "${params.database_folder}${params.database_prefix}.ribosomes.tsv"
 ribosome_tsv = file("${params.ribosome_tsv}")
 
 // The database contains a FASTA and a TSV linking headers to organisms
-params.genome_fasta = "${database_folder}${database_prefix}.fasta.gz"
+params.genome_fasta = "${params.database_folder}${params.database_prefix}.fasta.gz"
 genome_fasta = file("${params.genome_fasta}")
-params.genome_tsv = "${database_folder}${database_prefix}.tsv.gz"
+params.genome_tsv = "${params.database_folder}${params.database_prefix}.tsv.gz"
 genome_tsv = file("${params.genome_tsv}")
-params.genome_table = "${database_folder}${database_prefix}.tsv.gz"
+params.genome_table = "${params.database_folder}${params.database_prefix}.tsv.gz"
 genome_table = file("${params.genome_table}")
-params.all_gff = "${database_folder}${database_prefix}.gff.gz"
+params.all_gff = "${params.database_folder}${params.database_prefix}.gff.gz"
 all_gff = file("${params.all_gff}")
 
 // Minimum coverage of a ribosomal subunit needed for full genome alignment
@@ -158,7 +158,7 @@ set -e
 tar xvf ${ribosome_tar}
 
 # Align with BWA and remove unmapped reads
-bwa mem -T ${min_qual} -a -t 8 ${database_prefix}.ribosomes.fasta ${input_fastq} | samtools view -b -F 4 -o ${sample_name}.ribosome.bam
+bwa mem -T ${min_qual} -a -t 8 ${params.database_prefix}.ribosomes.fasta ${input_fastq} | samtools view -b -F 4 -o ${sample_name}.ribosome.bam
 
     """
 
