@@ -45,6 +45,8 @@ set -e
 
 wget -O ${organism_name}.fasta.gz ${fasta_url}
 
+gzip -t ${organism_name}.fasta.gz
+
   """
 }
 
@@ -68,6 +70,8 @@ process downloadGFF {
 set -e
 
 wget -O ${organism_name}.gff.gz ${gff_url}
+
+gzip -t ${organism_name}.gff.gz
 
   """
 }
