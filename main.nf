@@ -411,7 +411,7 @@ echo "${sample_name},mapped_reads,\$n" > "${sample_name}.countMapped.csv"
 process summarizeAlignments {
   container "quay.io/fhcrc-microbiome/python-pandas:v0.24.2"
   cpus 4
-  memory "8 GB"
+  memory "30 GB"
 
   input:
   set sample_name, file(sample_pileup) from genome_pileup
