@@ -78,7 +78,7 @@ process filterHostReads {
   memory "8 GB"
 
   input:
-  file host_genome_tar from indexed_host
+  file host_genome_tar
   set sample_name, file(fastq) from filter_host_ch
   val min_qual from params.min_qual
   
