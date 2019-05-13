@@ -460,8 +460,9 @@ for line in gzip.open("${all_gff}", "rt"):
     
     # Get the gene name
     gene_desc = dict([
-            field.split("=", 1)
+        field.split("=", 1)
         for field in line[8].split(";")
+        if len(field.split("=", 1)) == 2
     ])
 
     if "ID" not in gene_desc:
