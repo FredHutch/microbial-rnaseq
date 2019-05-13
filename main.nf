@@ -383,8 +383,8 @@ samtools mpileup ${sample_name}.genomes.bam > ${sample_name}.genomes.pileup
 // Count the number of aligned reads
 process countAlignedReads {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
-  cpus 1
-  memory "4 GB"
+  cpus 4
+  memory "8 GB"
   
   input:
   set sample_name, file(bam) from count_aligned
@@ -410,8 +410,8 @@ echo "${sample_name},mapped_reads,\$n" > "${sample_name}.countMapped.csv"
 // Calculate summary metrics for each sample across all genomes
 process summarizeAlignments {
   container "quay.io/fhcrc-microbiome/python-pandas:v0.24.2"
-  cpus 1
-  memory "4 GB"
+  cpus 4
+  memory "8 GB"
 
   input:
   set sample_name, file(sample_pileup) from genome_pileup
@@ -511,8 +511,8 @@ annot.to_csv("${sample_name}.summary.csv", sep=",", index=None)
 // Combine results across all genomes
 process finalResults {
   container "quay.io/fhcrc-microbiome/python-pandas:v0.24.2"
-  cpus 1
-  memory "4 GB"
+  cpus 4
+  memory "8 GB"
   publishDir "${params.output_folder}"
 
   input:
@@ -584,8 +584,8 @@ for org, org_df in df.groupby("organism"):
 // Combine results across all genomes
 process mappingSummary {
   container "quay.io/fhcrc-microbiome/python-pandas:v0.24.2"
-  cpus 1
-  memory "4 GB"
+  cpus 4
+  memory "8 GB"
   publishDir "${params.output_folder}"
 
   input:
