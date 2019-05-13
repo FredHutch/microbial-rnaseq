@@ -410,8 +410,8 @@ echo "${sample_name},mapped_reads,\$n" > "${sample_name}.countMapped.csv"
 // Calculate summary metrics for each sample across all genomes
 process summarizeAlignments {
   container "quay.io/fhcrc-microbiome/python-pandas:v0.24.2"
-  cpus 4
-  memory "30 GB"
+  cpus 16
+  memory "120 GB"
 
   input:
   set sample_name, file(sample_pileup) from genome_pileup
