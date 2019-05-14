@@ -356,7 +356,7 @@ process alignGenomes {
   
   output:
   set sample_name, file("${sample_name}.genomes.bam") into count_aligned
-  set sample_name, file("${sample_name}.genomes.pileup") into genome_pileup
+  set sample_name, file("${sample_name}.genomes.pileup.gz") into genome_pileup
   file "${sample_name}.ref.fasta"
 
   afterScript "rm *"
@@ -374,7 +374,7 @@ bwa mem -T ${min_qual} -a -t 8 ${sample_name}.ref.fasta ${input_fastq} | samtool
 samtools sort ${sample_name}.genomes.bam > ${sample_name}.genomes.bam.sorted
 mv ${sample_name}.genomes.bam.sorted ${sample_name}.genomes.bam
 samtools index ${sample_name}.genomes.bam
-samtools mpileup ${sample_name}.genomes.bam > ${sample_name}.genomes.pileup
+samtools mpileup ${sample_name}.genomes.bam | gzip -c > ${sample_name}.genomes.pileup.gz
 
     """
 
