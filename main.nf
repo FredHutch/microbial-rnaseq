@@ -431,6 +431,7 @@ import gzip
 import pandas as pd
 
 # Read in the pileup
+print("Reading in the pileup file")
 pileup = pd.read_csv("${sample_pileup}", header=None, sep="\\t")
 
 # Calculate the depth per base
@@ -440,6 +441,7 @@ base_depth = dict([
 ])
 
 # Read in the list of organism names for each reference
+print("Reading in the organism names")
 org_names = pd.read_csv(
     "${genome_table}", 
     sep="\\t", 
@@ -449,6 +451,7 @@ org_names = pd.read_csv(
 all_references = set(org_names.index.values)
 
 # Read in the GFF annotations
+print("Reading in the GFF annotations")
 annot = []
 for line in gzip.open("${all_gff}", "rt"):
     if line[0] == '#':
@@ -492,6 +495,7 @@ annot["length"] = 1 + annot["end"] - annot["start"]
 assert (annot["length"] > 0).all()
 
 # Compute the depth of sequencing for each feature
+print("Computing depth of sequencing per gene")
 annot["depth"] = annot.apply(
     lambda r: sum([
         base_depth.get(r["reference"], dict()).get(ix, 0)
@@ -504,7 +508,9 @@ annot["depth"] = annot.apply(
 annot["sample"] = "${sample_name}"
 
 # Write out to a file
+print("Writing out to a file")
 annot.to_csv("${sample_name}.summary.csv", sep=",", index=None)
+print("Done")
 """
 
 }
