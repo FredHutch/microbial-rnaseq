@@ -431,13 +431,16 @@ import gzip
 import pandas as pd
 
 # Read in the pileup
-print("Reading in the pileup file")
-pileup = pd.read_csv("${sample_pileup}", header=None, sep="\\t")
-
 # Calculate the depth per base
+print("Reading in the pileup file and calculating base depth")
 base_depth = dict([
     (reference, reference_pileup.set_index(1)[3].to_dict())
-    for reference, reference_pileup in pileup.groupby(0)
+    for reference, reference_pileup in pd.read_csv(
+        "${sample_pileup}", 
+        header=None, 
+        sep="\\t", 
+        usecols[0, 1, 3]
+    ).groupby(0)
 ])
 
 # Read in the list of organism names for each reference
