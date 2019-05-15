@@ -439,7 +439,7 @@ base_depth = dict([
         "${sample_pileup}", 
         header=None, 
         sep="\\t", 
-        usecols[0, 1, 3]
+        usecols=[0, 1, 3]
     ).groupby(0)
 ])
 
