@@ -296,7 +296,7 @@ for line in gzip.open("${genome_tsv}", "rt").readlines():
 
 sample_headers = set([
     header
-    for genme in sample_genomes
+    for genome in sample_genomes
     for header in genome_headers[genome]
 ])
 
@@ -353,7 +353,7 @@ for line in gzip.open("${genome_tsv}", "rt").readlines():
 
 sample_headers = set([
     header
-    for genme in sample_genomes
+    for genome in sample_genomes
     for header in genome_headers[genome]
 ])
 
