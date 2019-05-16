@@ -209,7 +209,7 @@ process pickGenomes {
   val min_cov_pct from params.min_cov_pct
   
   output:
-  set sample_name, file("${sample_name}.genomes.txt") into genome_hits_ch
+  set sample_name, file("${sample_name}.genomes.txt") into genome_hits_ch, gff_hits_ch
 
   afterScript "rm *"
 
@@ -315,6 +315,64 @@ assert n_written == len(sample_headers), (n_written, len(sample_headers))
 }
 
 
+// Filter down to the annotations for the genomes detected for each sample
+process filterGFF {
+  container "quay.io/biocontainers/biopython@sha256:1196016b05927094af161ccf2cd8371aafc2e3a8daa51c51ff023f5eb45a820f"
+  cpus 1
+  memory "4 GB"
+
+  input:
+  file all_gff
+  file genome_tsv
+  set sample_name, file(sample_genomes) from gff_hits_ch
+  
+  output:
+  set sample_name, file("${sample_name}.ref.gff.gz") into gff_per_sample
+
+  afterScript "rm *"
+
+  """
+#!/usr/bin/env python3
+import gzip
+
+# Read in the genomes needed for this sample
+sample_genomes = open("${sample_genomes}").readlines()
+sample_genomes = [fp.rstrip("\\n") for fp in sample_genomes]
+
+# Figure out which headers that corresponds to
+genome_headers = dict()
+all_headers = set([])
+for line in gzip.open("${genome_tsv}", "rt").readlines():
+    line = line.rstrip("\\n").split("\\t")
+    if len(line) != 2:
+        continue
+    genome, header = line
+    assert header not in all_headers, "Found duplicate header: " + header
+    genome_headers[genome] = genome_headers.get(genome, [])
+    genome_headers[genome].append(header)
+
+sample_headers = set([
+    header
+    for genme in sample_genomes
+    for header in genome_headers[genome]
+])
+
+# Extract the sequences from the GFF
+n_written = 0
+with gzip.open("${sample_name}.ref.gff.gz", "wt") as fo:
+    with gzip.open("${all_gff}", "rt") as fi:
+        for line in fi:
+            if line[0] == '#':
+                continue
+            if line.split("\\t")[0] in sample_headers:
+                fo.write(line)
+                n_written += 1
+assert n_written > 0
+
+  """
+
+}
+
 // Make an indexed database of the genomes for each sample
 process indexGenomes {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
@@ -414,9 +472,8 @@ process summarizeAlignments {
   memory "60 GB"
 
   input:
-  set sample_name, file(sample_pileup) from genome_pileup
+  set sample_name, file(sample_pileup), file(sample_gff) from genome_pileup.join(gff_per_sample)
   file genome_table
-  file all_gff
   
   output:
   file "${sample_name}.summary.csv" into sample_results
@@ -456,7 +513,7 @@ all_references = set(org_names.index.values)
 # Read in the GFF annotations
 print("Reading in the GFF annotations")
 annot = []
-for line in gzip.open("${all_gff}", "rt"):
+for line in gzip.open("${sample_gff}", "rt"):
     if line[0] == '#':
         continue
     line = line.split("\\t")
