@@ -1,0 +1,4 @@
+name,fastq1,fastq2
+SRR8485398,sample_fastqs/SRR8485398_1.fastq.gz,sample_fastqs/SRR8485398_2.fastq.gz
+SRR8485399,sample_fastqs/SRR8485399_1.fastq.gz,sample_fastqs/SRR8485399_2.fastq.gz
+SRR8485400,sample_fastqs/SRR8485400_1.fastq.gz,sample_fastqs/SRR8485400_2.fastq.gz
