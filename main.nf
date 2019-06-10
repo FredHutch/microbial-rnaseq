@@ -73,13 +73,6 @@ all_gff = file("${params.all_gff}")
 params.min_cov_pct = 90
 params.min_qual = 50
 
-// --batchfile is a CSV with two columns, sample name and FASTQ
-Channel.from(file(params.batchfile))
-       .splitCsv(header: false, sep: ",")
-       .map { job ->
-       [job[0], file(job[1])]}
-       .into{ filter_host_ch; count_reads }
-
 // --host_genome is a TAR containing an indexed FASTA
 params.host_genome = "hg38.fasta.tar"
 host_genome_tar = file(params.host_genome)
@@ -90,6 +83,95 @@ params.output_folder = "./"
 // --output_prefix is the name to prepend to all output files
 params.output_prefix = "microbial-rnaseq"
 
+// Logic to handle different types of input data
+if ( params.paired ){
+  assert !params.single && !params.interleaved: "--paired cannot be specified with either --single or --interleaved"
+
+  Channel.from(file(params.batchfile))
+        .splitCsv(header: true, sep: ",")
+        .map { sample ->
+        [sample.name, file(sample.fastq1), file(sample.fastq2)]}
+        .set{ interleave_ch }
+
+  process interleave {
+    container "ubuntu:16.04"
+    cpus 1
+    memory "2 GB"
+    errorStrategy "retry"
+
+    input:
+    set sample_name, file(fastq1), file(fastq2) from interleave_ch
+
+    output:
+    set sample_name, file("${sample_name}.fastq.gz") into count_reads, filter_host_ch
+
+    """
+    set -e
+
+    # Some basic checks that the files exist and the line numbers match
+    [[ -s "${fastq1}" ]]
+    [[ -s "${fastq2}" ]]
+    (( \$(gunzip -c ${fastq1} | wc -l) == \$(gunzip -c ${fastq2} | wc -l) ))
+
+    # Now interleave the files
+    paste <(gunzip -c ${fastq1}) <(gunzip -c ${fastq2}) | paste - - - - | awk -v OFS="\\n" -v FS="\\t" '{print(\$1,\$3,\$5,\$7,\$2,\$4,\$6,\$8)}' | gzip -c > "${sample_name}.fastq.gz"
+    """
+      
+  }
+
+}
+else if (params.bam){
+  assert !params.paired: "--bam cannot be specified with --paired (use --single [default] or --interleaved)"
+  if (params.single && paired.interleaved){
+    assert false: "Cannot specify both --single and --interleaved"
+  }
+
+  Channel.from(file(params.batchfile))
+        .splitCsv(header: true, sep: ",")
+        .map { sample ->
+        [sample.name, file(sample.bam)]}
+        .set{ bam_ch }
+
+  // Convert the input BAM file into FASTQ format
+  process bamToFastq {
+    container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
+    cpus 1
+    memory "2 GB"
+
+    input:
+    set sample_name, file(bam) from bam_ch
+    
+    output:
+    set sample_name, file("${sample_name}.fastq.gz") into count_reads, filter_host_ch
+
+    afterScript "rm *"
+
+    """
+#!/bin/bash
+
+set -e
+
+samtools fastq "${bam}" | gzip -c > "${sample_name}.fastq.gz"
+      """
+
+  }
+}
+else {
+  if ( params.interleaved ){
+    assert !params.single && !params.paired: "--interleaved cannot be specified with either --single or --paired"
+  }
+  if ( params.single ){
+    assert !params.interleaved && !params.paired: "--single cannot be specified with either --interleaved or --paired"
+  }
+
+  // For either `interleaved` or `single` (including no flags), just put the FASTQ into the same analysis queue
+  Channel.from(file(params.batchfile))
+        .splitCsv(header: true, sep: ",")
+        .map { sample ->
+        [sample.name, file(sample.fastq)]}
+        .into{ count_reads; filter_host_ch }
+
+}
 
 // Count the number of input reads
 process countReads {
