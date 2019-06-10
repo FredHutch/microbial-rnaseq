@@ -201,6 +201,13 @@ echo "${sample_name},total_reads,\$n" > "${sample_name}.countReads.csv"
 
 if (params.paired || params.interleaved){
   extra_bwa_flag = " -p "
+  samtools_filter_unmapped = " -F 2 "
+  samtools_filter_mapped = " -f 2 "
+}
+else {
+  extra_bwa_flag = " "
+  samtools_filter_unmapped = "-f 4"
+  samtools_filter_mapped = "-F 4"
 }
 
 // Filter out any reads that align to the host
@@ -234,7 +241,13 @@ host_genome_name=\$(echo ${host_genome_tar} | sed 's/.tar//')
 [[ -s \$host_genome_name ]]
 
 # Align with BWA and save the unmapped BAM
-awk '{print("@" \$1 "\\n" \$10 "\\n+\\n" \$11)}' | \
+bwa mem -T ${min_qual} -t 4${extra_bwa_flag}\$host_genome_name ${fastq} > ${sample_name}.bam
+echo "Number of alignments: \$(samtools view ${sample_name}.bam | wc -l)"
+
+cat ${sample_name}.bam | samtools view ${samtools_filter_unmapped} > ${sample_name}.unmapped.bam
+echo "Number of unmapped alignments: \$(samtools view ${sample_name}.unmapped.bam | wc -l)"
+
+samtools fastq ${sample_name}.unmapped.bam | \
 gzip -c \
 > ${sample_name}.filtered.fastq.gz
 
@@ -294,7 +307,7 @@ set -e
 tar xvf ${ribosome_tar}
 
 # Align with BWA and remove unmapped reads
-bwa mem -T ${min_qual} -a -t 8 ${params.database_prefix}.ribosomes.fasta ${input_fastq} | samtools view -b -F 4 -o ${sample_name}.ribosome.bam
+bwa mem -T ${min_qual} -a -t 8${extra_bwa_flag}${params.database_prefix}.ribosomes.fasta ${input_fastq} | samtools view -b ${samtools_filter_mapped} -o ${sample_name}.ribosome.bam
 
     """
 
