@@ -16,19 +16,13 @@ Analysis of RNAseq data from (host-associated) microbial mixtures
 
 ### Input Files
 
-#### Samples (FASTQ)
+#### Batch file
 
-Each sample should be provided as a single FASTQ file with a unique name. Make a comma-delimited
-"batch file" without any header where the first column is the sample name and the second column
-is the path to the file (locally or on AWS S3). 
-
-For example:
-
-```
-SRR8485398,sample_fastqs/SRR8485398.fastq.gz
-SRR8485399,sample_fastqs/SRR8485399.fastq.gz
-SRR8485400,sample_fastqs/SRR8485400.fastq.gz
-```
+A group of samples is defined in a comma-delimited "batch file", which includes a single line for each sample.
+The name of each sample is given in the column with the header `name`. Samples with single-ended sequencing
+or paired-end sequencing which has been interleaved will use the column `fastq` to point to the FASTQ file
+(gzip optional) with that data. Paired-end sequencing experiments in which the data is available in two
+files (one for the forward read and one for the reverse read) will use the columns `fastq1` and `fastq2`.
 
 #### Reference Genomes
 
@@ -46,10 +40,14 @@ Bacteroides_fragilis_YCH46,ref_genomes/GCF_000009925.1_ASM992v1_genomic.fna.gz,r
 Shigella_sonnei_53G,ref_genomes/GCF_000283715.1_ASM28371v1_genomic.fna.gz,ref_genomes/GCF_000283715.1_ASM28371v1_genomic.gff.gz
 ```
 
+These reference genomes can be concatenated and indexed using the `build_database.nf` workflow.
+
 #### Host Genome
 
 In addition, you must specify a host genome (e.g. human) which will be used to 
 subtract data which shouldn't be aligned against bacteria.
+
+This action is also performed with the `build_database.nf` workflow.
 
 
 ### Output files
@@ -64,12 +62,19 @@ The output of the tool is specified with two flags:
 
 At the moment, this tool only takes one tunable parameter: `--min_cov_pct`, which is
 the minimum amount of coverage across the ribosomes that a genome must have in order 
-to justfiy a full genome alignment.
+to justify a full genome alignment.
+
+
+### Example database
+
+We have compiled an example reference database and it is currently hosted at 
+`s3://fh-ctr-public-reference-data/tool_specific_data/microbial-rnaseq/2019-06-10/`.
+An example of running input data against this database is given below.
 
 
 ### Running the tool
 
-The tool can be run directly from this GitHub repo:
+The tool can be run directly from this GitHub repo, e.g.:
 
 ```
 
@@ -79,8 +84,10 @@ nextflow \
     run \
     fredhutch/microbial-rnaseq \
     --batchfile batchfile.csv \
-    --genome_list genome_list.csv \
-    --host_genome ref_genomes/AY064377.1.fasta \
+    --interleaved \
+    --host_genome "s3://fh-ctr-public-reference-data/tool_specific_data/microbial-rnaseq/2019-06-10/Homo_sapiens_assembly38.fasta.tar" \
+    --database_folder "s3://fh-ctr-public-reference-data/tool_specific_data/microbial-rnaseq/2019-06-10/" \
+    --database_prefix 2019-05-12-rnaseq-database \
     --min_cov_pct 10 \
     --output_folder results/ \
     --output_prefix 2019-05-08-test \
