@@ -5,10 +5,10 @@ set -e
 nextflow \
     -C nextflow.config \
     run \
-    fredhutch/microbial-rnaseq \
+    ../main.nf \
     --batchfile batchfile.csv \
     --genome_list genome_list.csv \
-    --host_genome ref_genomes/AY064377.1.fasta \
+    --host_genome ref_genomes/AY064377.1.fasta.tar \
     --min_cov_pct 10 \
     --output_folder results/ \
     --output_prefix 2019-05-08-test \
