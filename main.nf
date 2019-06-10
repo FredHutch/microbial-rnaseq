@@ -1,5 +1,52 @@
 #!/usr/bin/env nextflow
 
+// Default values for boolean flags
+params.single = false
+params.paired = false
+params.interleaved = false
+params.bam = false
+params.help = false
+
+def helpMessage() {
+    log.info"""
+    Usage:
+
+    nextflow run fredhutch/microbial-rnaseq <ARGUMENTS>
+    
+    Arguments:
+      --batchfile                   CSV file listing samples to analyze (see below)
+      --database_folder             Path to folder containing database created with build_database.nf
+      --database_prefix             Name of database (made with build_database.nf)
+      --host_genome                 Path to TAR file containing host genome (made with build_database.nf)
+      --output_folder               Folder to place outputs
+      --output_prefix               Name for output files
+
+    Options:
+      --min_cov_pct                 Minimum coverage of rRNA sequences used for filtering per-genome (default 90)
+      --single                      Input data is a single FASTQ containing unpaired reads (default)
+      --paired                      Input data is paired-end FASTQ in two files (otherwise treat as single-ended)
+      --interleaved                 Input data is paired-end FASTQ in a single file (otherwise treat as single-ended)
+      --bam                         Input data is in BAM format. Compatible with --interleaved for paired-end data.
+
+    Batchfile:
+      The batchfile is a CSV with a header indicating which samples correspond to which files.
+      The file must contain a column `name`. 
+      If data is --single or --interleaved, reads are specified by `fastq`.
+      If data is --paired, reads are specified by two columns, `fastq1` and `fastq2`.
+
+    """.stripIndent()
+}
+
+/*
+ * SET UP CONFIGURATION VARIABLES
+ */
+
+// Show help message
+if (params.help){
+    helpMessage()
+    exit 0
+}
+
 // --database_prefix is the name for the database files
 params.database_prefix = "microbial_genomes"
 
