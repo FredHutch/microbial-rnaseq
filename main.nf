@@ -199,6 +199,9 @@ echo "${sample_name},total_reads,\$n" > "${sample_name}.countReads.csv"
 
 }
 
+if (params.paired || params.interleaved){
+  extra_bwa_flag = " -p "
+}
 
 // Filter out any reads that align to the host
 process filterHostReads {
@@ -210,6 +213,8 @@ process filterHostReads {
   file host_genome_tar
   set sample_name, file(fastq) from filter_host_ch
   val min_qual from params.min_qual
+  val extra_bwa_flag
+  val samtools_filter_unmapped
   
   output:
   set sample_name, file("${sample_name}.filtered.fastq.gz") into align_ribo_ch, align_genome_ch, count_nonhuman
@@ -229,8 +234,6 @@ host_genome_name=\$(echo ${host_genome_tar} | sed 's/.tar//')
 [[ -s \$host_genome_name ]]
 
 # Align with BWA and save the unmapped BAM
-bwa mem -T ${min_qual} -t 4 \$host_genome_name ${fastq} | \
-samtools view -f 4 | \
 awk '{print("@" \$1 "\\n" \$10 "\\n+\\n" \$11)}' | \
 gzip -c \
 > ${sample_name}.filtered.fastq.gz
