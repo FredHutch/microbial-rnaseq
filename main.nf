@@ -103,7 +103,7 @@ if ( params.paired ){
     set sample_name, file(fastq1), file(fastq2) from interleave_ch
 
     output:
-    set sample_name, file("${sample_name}.fastq.gz") into count_reads, filter_host_ch
+    set sample_name, file("${fastq1}.interleaved.fastq.gz") into concatenate
 
     """
     set -e
@@ -114,7 +114,7 @@ if ( params.paired ){
     (( \$(gunzip -c ${fastq1} | wc -l) == \$(gunzip -c ${fastq2} | wc -l) ))
 
     # Now interleave the files
-    paste <(gunzip -c ${fastq1}) <(gunzip -c ${fastq2}) | paste - - - - | awk -v OFS="\\n" -v FS="\\t" '{print(\$1,\$3,\$5,\$7,\$2,\$4,\$6,\$8)}' | gzip -c > "${sample_name}.fastq.gz"
+    paste <(gunzip -c ${fastq1}) <(gunzip -c ${fastq2}) | paste - - - - | awk -v OFS="\\n" -v FS="\\t" '{print(\$1,\$3,\$5,\$7,\$2,\$4,\$6,\$8)}' | gzip -c > "${fastq1}.interleaved.fastq.gz"
     """
       
   }
@@ -142,7 +142,7 @@ else if (params.bam){
     set sample_name, file(bam) from bam_ch
     
     output:
-    set sample_name, file("${sample_name}.fastq.gz") into count_reads, filter_host_ch
+    set sample_name, file("${bam}.fastq.gz") into concatenate
 
     afterScript "rm *"
 
@@ -151,7 +151,7 @@ else if (params.bam){
 
 set -e
 
-samtools fastq "${bam}" | gzip -c > "${sample_name}.fastq.gz"
+samtools fastq "${bam}" | gzip -c > "${bam}.fastq.gz"
       """
 
   }
@@ -169,10 +169,34 @@ else {
         .splitCsv(header: true, sep: ",")
         .map { sample ->
         [sample.name, file(sample.fastq)]}
-        .into{ count_reads; filter_host_ch }
+        .into{ concatenate }
 
 }
 
+// Concatenate reads by sample name
+process concatenate {
+  container "ubuntu:16.04"
+  cpus 1
+  memory "4 GB"
+  
+  input:
+  set sample_name, file(fastq_list) from concatenate_ch.groupTuple()
+  
+  output:
+  file "${sample_name}.fastq.gz" into count_reads, filter_host_ch
+
+  afterScript "rm *"
+
+  """
+#!/bin/bash
+
+set -e
+
+cat ${fastq_list} > TEMP && mv TEMP ${sample_name}.fastq.gz
+
+  """
+
+}
 // Count the number of input reads
 process countReads {
   container "ubuntu:16.04"
@@ -254,6 +278,7 @@ gzip -c \
     """
 
 }
+
 
 // Count the number of non-human reads
 process countNonhumanReads {
