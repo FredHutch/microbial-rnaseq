@@ -225,8 +225,8 @@ echo "${sample_name},total_reads,\$n" > "${sample_name}.countReads.csv"
 
 if (params.paired || params.interleaved){
   extra_bwa_flag = " -p "
-  samtools_filter_unmapped = " -F 2 "
-  samtools_filter_mapped = " -f 2 "
+  samtools_filter_unmapped = "-F 2"
+  samtools_filter_mapped = "-f 2"
 }
 else {
   extra_bwa_flag = " "
@@ -333,7 +333,7 @@ set -e
 tar xvf ${ribosome_tar}
 
 # Align with BWA and remove unmapped reads
-bwa mem -T ${min_qual} -a -t 8${extra_bwa_flag}${params.database_prefix}.ribosomes.fasta ${input_fastq} | samtools view -b ${samtools_filter_mapped} -o ${sample_name}.ribosome.bam
+bwa mem -T ${min_qual} -a -t 8${extra_bwa_flag}${params.database_prefix}.ribosomes.fasta ${input_fastq} | samtools view -b ${samtools_filter_mapped} - -o ${sample_name}.ribosome.bam
 
     """
 
@@ -600,7 +600,7 @@ set -e
 tar xvf ${sample_name}.ref.fasta.tar
 
 # Align with BWA and remove unmapped reads
-bwa mem -T ${min_qual} -a -t 8${extra_bwa_flag}${sample_name}.ref.fasta ${input_fastq} | samtools view -b${samtools_filter_unmapped}-o ${sample_name}.genomes.bam
+bwa mem -T ${min_qual} -a -t 8${extra_bwa_flag}${sample_name}.ref.fasta ${input_fastq} | samtools view -b ${samtools_filter_unmapped} - -o ${sample_name}.genomes.bam
 
 samtools sort ${sample_name}.genomes.bam > ${sample_name}.genomes.bam.sorted
 mv ${sample_name}.genomes.bam.sorted ${sample_name}.genomes.bam
