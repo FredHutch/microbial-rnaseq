@@ -183,7 +183,7 @@ process concatenate {
   set sample_name, file(fastq_list) from concatenate_ch.groupTuple()
   
   output:
-  file "${sample_name}.fastq.gz" into count_reads, filter_host_ch
+  set sample_name, file("${sample_name}.fastq.gz") into count_reads, filter_host_ch
 
   afterScript "rm *"
 
