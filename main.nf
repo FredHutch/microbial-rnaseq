@@ -556,6 +556,7 @@ process alignGenomes {
   input:
   set sample_name, file(input_fastq), file(ref_fasta_tar) from align_genome_ch.join(align_genome_ref_ch)
   val min_qual from params.min_qual
+  val extra_bwa_flag
   
   output:
   set sample_name, file("${sample_name}.genomes.bam") into count_aligned
@@ -572,12 +573,16 @@ set -e
 tar xvf ${sample_name}.ref.fasta.tar
 
 # Align with BWA and remove unmapped reads
-bwa mem -T ${min_qual} -a -t 8 ${sample_name}.ref.fasta ${input_fastq} | samtools view -b -F 4 -o ${sample_name}.genomes.bam
+bwa mem -T ${min_qual} -a -t 8${extra_bwa_flag}${sample_name}.ref.fasta ${input_fastq} | samtools view -b -F 4 -o ${sample_name}.genomes.bam
 
 samtools sort ${sample_name}.genomes.bam > ${sample_name}.genomes.bam.sorted
 mv ${sample_name}.genomes.bam.sorted ${sample_name}.genomes.bam
 samtools index ${sample_name}.genomes.bam
 samtools mpileup ${sample_name}.genomes.bam | gzip -c > ${sample_name}.genomes.pileup.gz
+
+echo "Number of aligned bases: \$(gunzip -c ${sample_name}.genomes.pileup.gz | wc -l)"
+
+(( \$(gunzip -c ${sample_name}.genomes.pileup.gz | wc -l) > 0 ))
 
     """
 
