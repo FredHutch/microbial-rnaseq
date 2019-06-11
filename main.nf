@@ -103,7 +103,7 @@ if ( params.paired ){
     set sample_name, file(fastq1), file(fastq2) from interleave_ch
 
     output:
-    set sample_name, file("${fastq1}.interleaved.fastq.gz") into concatenate
+    set sample_name, file("${fastq1}.interleaved.fastq.gz") into concatenate_ch
 
     """
     set -e
@@ -142,7 +142,7 @@ else if (params.bam){
     set sample_name, file(bam) from bam_ch
     
     output:
-    set sample_name, file("${bam}.fastq.gz") into concatenate
+    set sample_name, file("${bam}.fastq.gz") into concatenate_ch
 
     afterScript "rm *"
 
@@ -169,7 +169,7 @@ else {
         .splitCsv(header: true, sep: ",")
         .map { sample ->
         [sample.name, file(sample.fastq)]}
-        .into{ concatenate }
+        .into{ concatenate_ch }
 
 }
 
