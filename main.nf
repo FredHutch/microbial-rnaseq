@@ -169,7 +169,7 @@ else {
         .splitCsv(header: true, sep: ",")
         .map { sample ->
         [sample.name, file(sample.fastq)]}
-        .into{ concatenate_ch }
+        .set{ concatenate_ch }
 
 }
 
