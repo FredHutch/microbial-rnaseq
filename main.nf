@@ -380,7 +380,7 @@ process pickGenomes {
   val min_cov_pct from params.min_cov_pct
   
   output:
-  set sample_name, file("${sample_name}.genomes.txt") into genome_hits_ch, gff_hits_ch
+  file "${sample_name}.genomes.txt" into sample_genomes_txt
 
   afterScript "rm *"
 
@@ -427,6 +427,30 @@ with open("${sample_name}.genomes.txt", "wt") as fo:
 
 }
 
+// Join together the complete list of genomes that were detected across all samples
+process aggregateGenomes {
+  container "ubuntu:16.04"
+  cpus 1
+  memory "4 GB"
+
+  input:
+  file txt from sample_genomes_txt.collect()
+  
+  output:
+  file "detected.genomes.txt" into genome_hits_ch, gff_hits_ch
+
+  afterScript "rm *"
+
+"""
+#!/bin/bash
+
+set -e
+
+for fp in ${txt}; do cat \$fp; echo; done | sort -u | sed '/^\$/d' > TEMP && mv TEMP detected.genomes.txt
+"""
+
+}
+
 
 // Filter down to the genomes detected for each sample
 process filterGenomes {
@@ -437,10 +461,11 @@ process filterGenomes {
   input:
   file genome_fasta
   file genome_tsv
-  set sample_name, file(sample_genomes) from genome_hits_ch
+  file sample_genomes from genome_hits_ch
+  publishDir "${params.output_folder}/ref"
   
   output:
-  set sample_name, file("${sample_name}.ref.fasta") into index_sample_ref_ch
+  file "filtered.ref.fasta" into filtered_ref_fasta
 
   afterScript "rm *"
 
@@ -473,7 +498,7 @@ sample_headers = set([
 
 # Extract the sequences from the FASTA
 n_written = 0
-with open("${sample_name}.ref.fasta", "wt") as fo:
+with open("filtered.ref.fasta", "wt") as fo:
     for header, seq in SimpleFastaParser(gzip.open("${genome_fasta}", "rt")):
         header = header.split(" ")[0].split("\\t")[0]
         if header in sample_headers:
@@ -491,14 +516,15 @@ process filterGFF {
   container "quay.io/biocontainers/biopython@sha256:1196016b05927094af161ccf2cd8371aafc2e3a8daa51c51ff023f5eb45a820f"
   cpus 1
   memory "4 GB"
+  publishDir "${params.output_folder}/ref"
 
   input:
   file all_gff
   file genome_tsv
-  set sample_name, file(sample_genomes) from gff_hits_ch
+  file sample_genomes from gff_hits_ch
   
   output:
-  set sample_name, file("${sample_name}.ref.gff.gz") into gff_per_sample
+  file "filtered.ref.gff.gz" into filtered_gff
 
   afterScript "rm *"
 
@@ -530,7 +556,7 @@ sample_headers = set([
 
 # Extract the sequences from the GFF
 n_written = 0
-with gzip.open("${sample_name}.ref.gff.gz", "wt") as fo:
+with gzip.open("filtered.ref.gff.gz", "wt") as fo:
     with gzip.open("${all_gff}", "rt") as fi:
         for line in fi:
             if line[0] == '#':
@@ -549,12 +575,14 @@ process indexGenomes {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
   cpus 4
   memory "8 GB"
+  publishDir "${params.output_folder}/ref"
 
   input:
-  set sample_name, file(sample_fasta) from index_sample_ref_ch
+  file filtered_ref_fasta
   
   output:
-  set sample_name, file("${sample_name}.ref.fasta.tar") into align_genome_ref_ch
+  file "filtered.ref.fasta.tar" into ref_fasta_tar
+  file "${filtered_ref_fasta}.fai"
 
   afterScript "rm *"
 
@@ -563,10 +591,11 @@ process indexGenomes {
 set -e
 
 # Index the selected genomes
-bwa index "${sample_fasta}"
+bwa index "${filtered_ref_fasta}"
+samtools faidx "${filtered_ref_fasta}"
 
 # Tar up the index
-tar cvf ${sample_name}.ref.fasta.tar ${sample_name}.ref.fasta*
+tar cvf filtered.ref.fasta.tar filtered.ref.fasta*
     """
 
 }
@@ -580,7 +609,8 @@ process alignGenomes {
   publishDir "${params.output_folder}/bam"
 
   input:
-  set sample_name, file(input_fastq), file(ref_fasta_tar) from align_genome_ch.join(align_genome_ref_ch)
+  set sample_name, file(input_fastq) from align_genome_ch
+  file ref_fasta_tar
   val min_qual from params.min_qual
   val extra_bwa_flag
   val samtools_filter_unmapped
@@ -588,7 +618,6 @@ process alignGenomes {
   output:
   set sample_name, file("${sample_name}.genomes.bam") into count_aligned
   set sample_name, file("${sample_name}.genomes.pileup.gz") into genome_pileup
-  file "${sample_name}.ref.fasta"
 
   afterScript "rm *"
 
@@ -597,10 +626,10 @@ process alignGenomes {
 set -e
 
 # Untar the indexed genome database
-tar xvf ${sample_name}.ref.fasta.tar
+tar xvf ${ref_fasta_tar}
 
 # Align with BWA and remove unmapped reads
-bwa mem -T ${min_qual} -a -t 8${extra_bwa_flag}${sample_name}.ref.fasta ${input_fastq} | samtools view -b ${samtools_filter_mapped} - -o ${sample_name}.genomes.bam
+bwa mem -T ${min_qual} -a -t 8${extra_bwa_flag}filtered.ref.fasta ${input_fastq} | samtools view -b ${samtools_filter_mapped} - -o ${sample_name}.genomes.bam
 
 samtools sort ${sample_name}.genomes.bam > ${sample_name}.genomes.bam.sorted
 mv ${sample_name}.genomes.bam.sorted ${sample_name}.genomes.bam
@@ -649,7 +678,8 @@ process summarizeAlignments {
   memory "60 GB"
 
   input:
-  set sample_name, file(sample_pileup), file(sample_gff) from genome_pileup.join(gff_per_sample)
+  set sample_name, file(sample_pileup) from genome_pileup
+  file filtered_gff
   file genome_table
   
   output:
@@ -690,7 +720,7 @@ all_references = set(org_names.index.values)
 # Read in the GFF annotations
 print("Reading in the GFF annotations")
 annot = []
-for line in gzip.open("${sample_gff}", "rt"):
+for line in gzip.open("${filtered_gff}", "rt"):
     if line[0] == '#':
         continue
     line = line.split("\\t")
