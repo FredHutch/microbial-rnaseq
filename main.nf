@@ -522,6 +522,7 @@ process filterGFF {
   file all_gff
   file genome_tsv
   file sample_genomes from gff_hits_ch
+  val min_cov_pct from params.min_cov_pct
   
   output:
   file "filtered.ref.gff.gz" into filtered_gff
@@ -535,6 +536,7 @@ import gzip
 # Read in the genomes needed for this sample
 sample_genomes = open("${sample_genomes}").readlines()
 sample_genomes = [fp.rstrip("\\n") for fp in sample_genomes]
+assert len(sample_genomes) > 0, "No genomes passed the filtering threshold of %d percent" % ("${min_cov_pct}")
 
 # Figure out which headers that corresponds to
 genome_headers = dict()
@@ -564,7 +566,7 @@ with gzip.open("filtered.ref.gff.gz", "wt") as fo:
             if line.split("\\t")[0] in sample_headers:
                 fo.write(line)
                 n_written += 1
-assert n_written > 0
+assert n_written > 0, "No annotations were found for the filtered genomes"
 
   """
 
