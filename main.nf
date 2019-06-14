@@ -237,8 +237,8 @@ else {
 // Filter out any reads that align to the host
 process filterHostReads {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
-  cpus 4
-  memory "8 GB"
+  cpus 8
+  memory "16 GB"
 
   input:
   file host_genome_tar
@@ -246,6 +246,7 @@ process filterHostReads {
   val min_qual from params.min_qual
   val extra_bwa_flag
   val samtools_filter_unmapped
+  val threads from 8
   
   output:
   set sample_name, file("${sample_name}.filtered.fastq.gz") into align_ribo_ch, align_genome_ch, count_nonhuman
@@ -265,7 +266,7 @@ host_genome_name=\$(echo ${host_genome_tar} | sed 's/.tar//')
 [[ -s \$host_genome_name ]]
 
 # Align with BWA and save the unmapped BAM
-bwa mem -T ${min_qual} -t 4${extra_bwa_flag}\$host_genome_name ${fastq} > ${sample_name}.bam
+bwa mem -T ${min_qual} -t ${threads}${extra_bwa_flag}\$host_genome_name ${fastq} > ${sample_name}.bam
 echo "Number of alignments: \$(samtools view ${sample_name}.bam | wc -l)"
 
 cat ${sample_name}.bam | samtools view ${samtools_filter_unmapped} > ${sample_name}.unmapped.bam
