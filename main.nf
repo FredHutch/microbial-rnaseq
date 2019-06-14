@@ -611,7 +611,7 @@ tar cvf filtered.ref.fasta.tar filtered.ref.fasta*
 process alignGenomes {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
   cpus { 4 * task.attempt }
-  memory { 8.GB * task.attempt}
+  memory { 16.GB * task.attempt}
   publishDir "${params.output_folder}/bam"
   errorStrategy "retry"
 
