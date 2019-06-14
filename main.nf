@@ -455,8 +455,8 @@ for fp in ${txt}; do cat \$fp; echo; done | sort -u | sed '/^\$/d' > TEMP && mv 
 // Filter down to the genomes detected for each sample
 process filterGenomes {
   container "quay.io/biocontainers/biopython@sha256:1196016b05927094af161ccf2cd8371aafc2e3a8daa51c51ff023f5eb45a820f"
-  cpus 1
-  memory "4 GB"
+  cpus 2
+  memory "8 GB"
 
   input:
   file genome_fasta
