@@ -312,16 +312,16 @@ echo "${sample_name},nonhuman_reads,\$n" > "${sample_name}.countNonhumanReads.cs
 process alignRibosomes {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
   cpus { 4 * task.attempt }
-  memory { 8.GB * task.attempt}
+  memory { 8.GB * task.attempt }
   
   errorStrategy "retry"
-  
+
   input:
   file ribosome_tar
   set sample_name, file(input_fastq) from align_ribo_ch
   val min_qual from params.min_qual
   val samtools_filter_mapped
-  val threads from { 4 * task.attempt }
+  val threads from 4
     
   output:
   set sample_name, file("${sample_name}.ribosome.bam") into ribo_coverage_ch
@@ -337,7 +337,7 @@ set -e
 tar xvf ${ribosome_tar}
 
 # Align with BWA and remove unmapped reads
-bwa mem -T ${min_qual} -a -t ${threads}${extra_bwa_flag}${params.database_prefix}.ribosomes.fasta ${input_fastq} | samtools view -b ${samtools_filter_mapped} - -o ${sample_name}.ribosome.bam
+bwa mem -T ${min_qual} -a -t ${threads * task.attempt}${extra_bwa_flag}${params.database_prefix}.ribosomes.fasta ${input_fastq} | samtools view -b ${samtools_filter_mapped} - -o ${sample_name}.ribosome.bam
 
     """
 
@@ -621,7 +621,7 @@ process alignGenomes {
   val min_qual from params.min_qual
   val extra_bwa_flag
   val samtools_filter_unmapped
-  val threads from { 4 * task.attempt }
+  val threads from 4
   
   output:
   set sample_name, file("${sample_name}.genomes.bam") into count_aligned
@@ -637,7 +637,7 @@ set -e
 tar xvf ${ref_fasta_tar}
 
 # Align with BWA and remove unmapped reads
-bwa mem -T ${min_qual} -a -t ${threads}${extra_bwa_flag}filtered.ref.fasta ${input_fastq} | samtools view -b ${samtools_filter_mapped} - -o ${sample_name}.genomes.bam
+bwa mem -T ${min_qual} -a -t ${threads * task.attempt}${extra_bwa_flag}filtered.ref.fasta ${input_fastq} | samtools view -b ${samtools_filter_mapped} - -o ${sample_name}.genomes.bam
 
 samtools sort ${sample_name}.genomes.bam > ${sample_name}.genomes.bam.sorted
 mv ${sample_name}.genomes.bam.sorted ${sample_name}.genomes.bam
