@@ -751,7 +751,9 @@ for line in gzip.open("${filtered_gff}", "rt"):
         ("reference", line[0]),
         ("start", int(line[3])),
         ("end", int(line[4])),
-        ("ID", gene_desc["ID"])
+        ("ID", gene_desc["ID"]),
+        ("name", gene_desc.get("Name", gene_desc.get("name"))),
+        ("product", gene_desc.get("product"))
     ]))
 
 # Format as a DataFrame
@@ -846,11 +848,17 @@ for t in summary_df.columns.values:
         sep=","
     )
 
+# Make a column with the annotation of each gene
+df["annotation"] = df.apply(
+    lambda r: "%s: %s (%s)" % (r["name"], r["product"], r["ID"]),
+    axis=1
+)
+
 # For each organism, print out the depth of sequencing across all samples
 for org, org_df in df.groupby("organism"):
     org_df.pivot_table(
         index="sample",
-        columns="ID",
+        columns="annotation",
         values="depth"
     ).reset_index().to_csv(
         "${params.output_prefix}." + org + ".csv",
