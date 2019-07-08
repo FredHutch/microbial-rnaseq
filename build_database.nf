@@ -343,7 +343,7 @@ process concatGFF {
   publishDir "${params.output_folder}"
   
   input:
-  file "*" from all_gff_ch.collect()
+  file all_gff from all_gff_ch.collect()
   val database_prefix from params.database_prefix
   
   output:
@@ -356,7 +356,9 @@ process concatGFF {
 
 set -e
 
-cat *gff.gz > ${database_prefix}.gff.gz
+for gff in ${all_gff}; do 
+  cat \$gff >> ${database_prefix}.gff.gz
+done
 
   """
 
