@@ -180,8 +180,8 @@ assert n_written == len(ribosomes), (n_written, len(ribosomes))
 // Make an indexed database of all ribosomes
 process indexRibosomes {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
-  cpus 4
-  memory "8 GB"
+  cpus 8
+  memory "60 GB"
   publishDir "${params.output_folder}"
 
   input:
