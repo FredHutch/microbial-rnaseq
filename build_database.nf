@@ -115,7 +115,8 @@ process extractRibosomes {
   set organism_name, file(fasta), file(gff3) from get_ribosome_fasta_ch.join(get_ribosome_gff_ch)
   
   output:
-  set file("${fasta}.ribosome.fasta"), file("${fasta}.ribosome.tsv") into ribosome_ch
+  file "${fasta}.ribosome.fasta" into get_ribosome_fasta_ch
+  file "${fasta}.ribosome.tsv" into ribosome_tsv_ch
 
   afterScript "rm *"
 
@@ -185,11 +186,45 @@ process indexRibosomes {
   publishDir "${params.output_folder}"
 
   input:
-  file "*" from ribosome_ch.collect()
+  file ribosome_fasta from ribosome_fasta_ch
   val database_prefix from params.database_prefix
   
   output:
   file "${database_prefix}.ribosomes.tar"
+  
+  afterScript "rm *"
+
+  """
+#!/bin/bash
+
+set -e
+
+# Concatenate all FASTAs
+for f in ${ribosome_fasta}; do
+    cat \$f >> ${database_prefix}.ribosomes.fasta
+done
+
+# Index the ribosomal sequences
+bwa index ${database_prefix}.ribosomes.fasta
+
+# Tar up the index
+tar cvf ${database_prefix}.ribosomes.tar ${database_prefix}.ribosomes.fasta*
+    """
+
+}
+
+// Make an indexed database of all ribosomes
+process collectRibosomeTSV {
+  container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
+  cpus 8
+  memory "60 GB"
+  publishDir "${params.output_folder}"
+
+  input:
+  file ribosome_tsv from ribosome_tsv_ch.collect()
+  val database_prefix from params.database_prefix
+  
+  output:
   file "${database_prefix}.ribosomes.tsv"
 
   afterScript "rm *"
@@ -200,16 +235,9 @@ process indexRibosomes {
 set -e
 
 # Concatenate all TSVs
-cat *tsv > ALL_TSV && rm *tsv && mv ALL_TSV ${database_prefix}.ribosomes.tsv
-
-# Concatenate all FASTAs
-cat *fasta > ALL_FASTA && rm *fasta && mv ALL_FASTA ${database_prefix}.ribosomes.fasta
-
-# Index the ribosomal sequences
-bwa index ${database_prefix}.ribosomes.fasta
-
-# Tar up the index
-tar cvf ${database_prefix}.ribosomes.tar ${database_prefix}.ribosomes.fasta*
+for f in ${ribosome_tsv}; do
+    cat \$f >> ${database_prefix}.ribosomes.tsv
+done
     """
 
 }
