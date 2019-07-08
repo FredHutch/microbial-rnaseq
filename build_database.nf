@@ -115,7 +115,7 @@ process extractRibosomes {
   set organism_name, file(fasta), file(gff3) from get_ribosome_fasta_ch.join(get_ribosome_gff_ch)
   
   output:
-  file "${fasta}.ribosome.fasta" into get_ribosome_fasta_ch
+  file "${fasta}.ribosome.fasta" into ribosome_fasta_ch
   file "${fasta}.ribosome.tsv" into ribosome_tsv_ch
 
   afterScript "rm *"
