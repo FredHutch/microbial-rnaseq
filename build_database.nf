@@ -81,8 +81,8 @@ gzip -t ${organism_name}.gff.gz
 process indexHost {
 
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
-  cpus 1
-  memory "8 GB"
+  cpus 8
+  memory "60 GB"
   publishDir "${params.output_folder}"
 
   input:
@@ -253,8 +253,8 @@ with gzip.open("${organism_name}.headers.tsv.gz", "wt") as fo:
 
 process concatGenomes {
   container "ubuntu:16.04"
-  cpus 4
-  memory "30 GB"
+  cpus 8
+  memory "60 GB"
   publishDir "${params.output_folder}"
   
   input:
@@ -281,8 +281,8 @@ cat *fasta.gz >> ${database_prefix}.fasta.gz
 // Combine all of the headers
 process concatHeaders {
   container "ubuntu:16.04"
-  cpus 4
-  memory "30 GB"
+  cpus 8
+  memory "60 GB"
   publishDir "${params.output_folder}"
   
   input:
@@ -310,8 +310,8 @@ cat *tsv.gz > ${database_prefix}.tsv.gz
 // Combine all of the GFF3 files
 process concatGFF {
   container "ubuntu:16.04"
-  cpus 1
-  memory "4 GB"
+  cpus 8
+  memory "60 GB"
   publishDir "${params.output_folder}"
   
   input:
