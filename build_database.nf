@@ -186,7 +186,7 @@ process indexRibosomes {
   publishDir "${params.output_folder}"
 
   input:
-  file ribosome_fasta from ribosome_fasta_ch
+  file ribosome_fasta from ribosome_fasta_ch.collect()
   val database_prefix from params.database_prefix
   
   output:
