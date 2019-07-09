@@ -335,8 +335,8 @@ cat *tsv.gz > ${database_prefix}.tsv.gz
 }
 
 // Combine the GFF3 files into batches of 10
-  container "ubuntu:16.04"
 process preConcatGFF {
+  container "ubuntu:16.04"
   cpus 8
   memory "60 GB"
   publishDir "${params.output_folder}"
