@@ -339,7 +339,6 @@ process preConcatGFF {
   container "ubuntu:16.04"
   cpus 8
   memory "60 GB"
-  publishDir "${params.output_folder}"
   
   input:
   file all_gff from all_gff_ch.collect(100)
