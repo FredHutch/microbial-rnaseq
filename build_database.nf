@@ -356,7 +356,8 @@ process concatGFF {
 
 set -e
 
-for gff in ${all_gff}; do 
+for gff in ${all_gff}; do
+  [[ \$gff =~ ".gff.gz" ]] || continue
   cat \$gff >> ${database_prefix}.gff.gz
 done
 
