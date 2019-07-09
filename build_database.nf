@@ -341,7 +341,7 @@ process preConcatGFF {
   memory "60 GB"
   
   input:
-  file all_gff from all_gff_ch.collect(100)
+  file all_gff from all_gff_ch.collect().collate(100)
   
   output:
   file "*.gff.gz" into grouped_gff_ch
