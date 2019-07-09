@@ -334,6 +334,36 @@ cat *tsv.gz > ${database_prefix}.tsv.gz
 
 }
 
+// Combine the GFF3 files into batches of 10
+  container "ubuntu:16.04"
+process preConcatGFF {
+  cpus 8
+  memory "60 GB"
+  publishDir "${params.output_folder}"
+  
+  input:
+  file all_gff from all_gff_ch.collect(100)
+  
+  output:
+  file "*.gff.gz" into grouped_gff_ch
+
+  afterScript "rm *"
+
+  """
+#!/bin/bash
+
+set -e
+
+for gff in *.gff.gz; do
+  cat \$gff >> TEMP
+  rm \$gff
+done
+
+mv TEMP \$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16).gff.gz
+
+  """
+
+}
 
 // Combine all of the GFF3 files
 process concatGFF {
@@ -343,7 +373,7 @@ process concatGFF {
   publishDir "${params.output_folder}"
   
   input:
-  file all_gff from all_gff_ch.collect()
+  file all_gff from grouped_gff_ch.collect()
   val database_prefix from params.database_prefix
   
   output:
