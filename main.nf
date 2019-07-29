@@ -796,7 +796,7 @@ print("Done")
 process finalResults {
   container "quay.io/fhcrc-microbiome/python-pandas:v0.24.2"
   cpus 4
-  memory "32 GB"
+  memory "64 GB"
   publishDir "${params.output_folder}"
 
   input:
