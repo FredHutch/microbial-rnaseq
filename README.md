@@ -42,6 +42,14 @@ Shigella_sonnei_53G,ref_genomes/GCF_000283715.1_ASM28371v1_genomic.fna.gz,ref_ge
 
 These reference genomes can be concatenated and indexed using the `build_database.nf` workflow.
 
+
+### Example database
+
+We have compiled an example reference database and it is currently hosted at 
+`s3://fh-ctr-public-reference-data/tool_specific_data/microbial-rnaseq/2019-06-10/`.
+An example of running input data against this database is given below.
+
+
 #### Host Genome
 
 In addition, you must specify a host genome (e.g. human) which will be used to 
@@ -63,13 +71,6 @@ The output of the tool is specified with two flags:
 At the moment, this tool only takes one tunable parameter: `--min_cov_pct`, which is
 the minimum amount of coverage across the ribosomes that a genome must have in order 
 to justify a full genome alignment.
-
-
-### Example database
-
-We have compiled an example reference database and it is currently hosted at 
-`s3://fh-ctr-public-reference-data/tool_specific_data/microbial-rnaseq/2019-06-10/`.
-An example of running input data against this database is given below.
 
 
 ### Running the tool
