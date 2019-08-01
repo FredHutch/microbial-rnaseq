@@ -46,7 +46,7 @@ These reference genomes can be concatenated and indexed using the `build_databas
 ### Example database
 
 We have compiled an example reference database and it is currently hosted at 
-`s3://fh-ctr-public-reference-data/tool_specific_data/microbial-rnaseq/2019-06-10/`.
+`s3://fh-ctr-public-reference-data/tool_specific_data/microbial-rnaseq/2019-07-03/`.
 An example of running input data against this database is given below.
 
 
@@ -87,8 +87,8 @@ nextflow \
     --batchfile batchfile.csv \
     --interleaved \
     --host_genome "s3://fh-ctr-public-reference-data/tool_specific_data/microbial-rnaseq/2019-06-10/Homo_sapiens_assembly38.fasta.tar" \
-    --database_folder "s3://fh-ctr-public-reference-data/tool_specific_data/microbial-rnaseq/2019-06-10/" \
-    --database_prefix 2019-05-12-rnaseq-database \
+    --database_folder "s3://fh-ctr-public-reference-data/tool_specific_data/microbial-rnaseq/2019-07-03/" \
+    --database_prefix 2019-07-03-rnaseq-database \
     --min_cov_pct 10 \
     --output_folder results/ \
     --output_prefix 2019-05-08-test \
