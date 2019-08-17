@@ -375,8 +375,8 @@ rm ${bam}.sorted ${bam}
 // Figure out which genomes have sufficient ribosomal coverage
 process pickGenomes {
   container "quay.io/fhcrc-microbiome/python-pandas:v0.24.2"
-  cpus 1
-  memory "4 GB"
+  cpus 8
+  memory "16 GB"
 
   input:
   set sample_name, file(sample_pileup), file(sample_idxstats) from ribo_hits_ch
