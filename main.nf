@@ -311,8 +311,8 @@ echo "${sample_name},nonhuman_reads,\$n" > "${sample_name}.countNonhumanReads.cs
 // Align reads against all ribosomes
 process alignRibosomes {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
-  cpus { 4 * task.attempt }
-  memory { 8.GB * task.attempt }
+  cpus 4
+  memory "30 GB"
   
   errorStrategy "retry"
 
