@@ -346,8 +346,8 @@ bwa mem -T ${min_qual} -a -t ${threads * task.attempt}${extra_bwa_flag}${params.
 // Calculate the coverage of each ribosome reference
 process riboCoverage {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
-  cpus 1
-  memory "4 GB"
+  cpus 4
+  memory "30 GB"
 
   input:
   set sample_name, file(bam) from ribo_coverage_ch
