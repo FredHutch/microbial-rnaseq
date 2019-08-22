@@ -362,7 +362,7 @@ process riboCoverage {
 
 set -e
 
-samtools sort ${bam} > ${bam}.sorted
+samtools sort -m 2G ${bam} > ${bam}.sorted
 samtools index ${bam}.sorted
 samtools mpileup ${bam}.sorted > ${sample_name}.ribosome.pileup
 samtools idxstats ${bam}.sorted > ${sample_name}.ribosome.idxstats
