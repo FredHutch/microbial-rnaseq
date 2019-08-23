@@ -610,8 +610,8 @@ tar cvf filtered.ref.fasta.tar filtered.ref.fasta*
 // Align reads against selected genomes
 process alignGenomes {
   container "quay.io/fhcrc-microbiome/bwa@sha256:2fc9c6c38521b04020a1e148ba042a2fccf8de6affebc530fbdd45abc14bf9e6"
-  cpus { 4 * task.attempt }
-  memory { 16.GB * task.attempt}
+  cpus 8
+  memory "60 GB"
   publishDir "${params.output_folder}/bam"
   errorStrategy "retry"
 
@@ -621,7 +621,7 @@ process alignGenomes {
   val min_qual from params.min_qual
   val extra_bwa_flag
   val samtools_filter_unmapped
-  val threads from 4
+  val threads from 8
   
   output:
   set sample_name, file("${sample_name}.genomes.bam") into count_aligned
