@@ -647,7 +647,7 @@ samtools mpileup ${sample_name}.genomes.bam | gzip -c > ${sample_name}.genomes.p
 echo "Number of aligned bases: \$(gunzip -c ${sample_name}.genomes.pileup.gz | wc -l)"
 
 # If no reads were aligned, delete the pileup and BAM
-(( \$(gunzip -c ${sample_name}.genomes.pileup.gz | wc -l) == 0 )) && \
+(( \$(gunzip -c ${sample_name}.genomes.pileup.gz | wc -l) > 0 )) || \
 rm ${sample_name}.genomes.pileup.gz ${sample_name}.genomes.bam
 
     """
