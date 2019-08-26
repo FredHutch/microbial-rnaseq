@@ -624,8 +624,8 @@ process alignGenomes {
   val threads from 8
   
   output:
-  set sample_name, file("${sample_name}.genomes.bam") into count_aligned
-  set sample_name, file("${sample_name}.genomes.pileup.gz") into genome_pileup
+  set sample_name, file("${sample_name}.genomes.bam") optional true into count_aligned
+  set sample_name, file("${sample_name}.genomes.pileup.gz") optional true into genome_pileup
 
   afterScript "rm *"
 
@@ -646,7 +646,9 @@ samtools mpileup ${sample_name}.genomes.bam | gzip -c > ${sample_name}.genomes.p
 
 echo "Number of aligned bases: \$(gunzip -c ${sample_name}.genomes.pileup.gz | wc -l)"
 
-(( \$(gunzip -c ${sample_name}.genomes.pileup.gz | wc -l) > 0 ))
+# If no reads were aligned, delete the pileup and BAM
+(( \$(gunzip -c ${sample_name}.genomes.pileup.gz | wc -l) == 0 )) && \
+rm ${sample_name}.genomes.pileup.gz ${sample_name}.genomes.bam
 
     """
 
