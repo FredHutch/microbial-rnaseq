@@ -797,8 +797,8 @@ print("Done")
 // Combine results across all genomes
 process finalResults {
   container "quay.io/fhcrc-microbiome/python-pandas:v0.24.2"
-  cpus 4
-  memory "120 GB"
+  cpus 8
+  memory "240 GB"
   publishDir "${params.output_folder}"
 
   input:
